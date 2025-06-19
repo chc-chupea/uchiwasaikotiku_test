@@ -272,34 +272,71 @@
       highresImg.crossOrigin = "anonymous";
       highresImg.onload = () => {
         ctx.drawImage(highresImg, 0, 0, w, h);
+
+
+      // 🔻ここから追加：ウォーターマーク（透かし文字）
+      ctx.font = "bold 60px sans-serif";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.textAlign = "center";
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
+      ctx.lineWidth = 4;
+
+      const watermarkText = "📱 長押しで写真に保存！";
+      const textX = w / 2;
+      const textY = h - 100;
+
+      // 背景が明るくても読めるように縁取り＋塗り
+      ctx.strokeText(watermarkText, textX, textY);
+      ctx.fillText(watermarkText, textX, textY);
+
+      // 🔻画像として保存・表示
+      canvas.toBlob(blob => {
+        const imgURL = URL.createObjectURL(blob);
+
+        // 画像プレビュー表示
+        const previewImg = document.createElement('img');
+        previewImg.src = imgURL;
+        previewImg.alt = "保存画像プレビュー";
+        previewImg.style.maxWidth = "90%";
+        previewImg.style.marginTop = "20px";
+        previewImg.style.border = "1px solid #ccc";
+        previewImg.style.borderRadius = "12px";
+        previewImg.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+        previewImg.id = "previewImage";
+
+        // 表示エリアを更新
+        notice.innerHTML = '';
+        notice.style.display = 'block';
+        notice.style.fontSize = '14px';
+        notice.appendChild(previewImg);
+
+        // 案内テキスト
+        const tip = document.createElement('p');
+        tip.innerHTML = `📱 <strong>iPhoneの方へ：</strong><br>
+          上の画像を<strong>長押し</strong>して「写真に追加」を選んでください。`;
+        tip.style.fontSize = '13px';
+        tip.style.marginTop = '10px';
+        notice.appendChild(tip);
+
+        // フォームリンクボタン
+        const manualButton = document.createElement('a');
+        manualButton.href = formURL;
+        manualButton.target = '_blank';
+        manualButton.innerText = '📝 保存できたら注文フォームへ';
+        manualButton.className = 'form-button';
+        manualButton.style.display = 'inline-block';
+        manualButton.style.marginTop = '15px';
+        notice.appendChild(manualButton);
+
+        document.getElementById('notice').scrollIntoView({ behavior: 'smooth' });
+      });
+    };
+
         canvas.toBlob(blob => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
           a.download = getTimestampBasedFileName(); // タイムスタンプ+30分単位+ランダム3桁でファイル名を生成
           a.click();
-
-
-      // プレビュー表示と保存案内
-      const imgPreview = document.createElement('img');
-      imgPreview.src = a.href;
-      imgPreview.style.maxWidth = '90%';
-      imgPreview.style.marginTop = '10px';
-      imgPreview.style.border = '1px solid #ccc';
-      notice.appendChild(imgPreview);
-
-      // 保存方法の案内文を上に移動
-      const lang = navigator.language.slice(0, 2);
-      const messages = {
-        ja: '📱 iPhoneの方は、上の画像を<strong>長押しして「写真に追加」</strong>してください。',
-        en: '📱 iPhone users: <strong>long-press the image above and choose “Add to Photos”</strong>.',
-        zh: '📱 iPhone用户：<strong>长按上面的图片并选择“添加到照片”</strong>。',
-        ko: '📱 iPhone 사용자: <strong>위 이미지를 길게 눌러 “사진에 추가”를 선택하세요</strong>.',
-        vi: '📱 Người dùng iPhone: <strong>Nhấn và giữ hình ảnh ở trên rồi chọn “Thêm vào Ảnh”</strong>.'
-      };
-      notice.innerHTML = messages[lang] || messages['ja'];
-      notice.appendChild(imgPreview);
-
-
           notice.style.display = 'block';
           notice.style.fontSize = '12px';  // ← フォントサイズを小さく指定！
           notice.innerHTML = ''; // 以前の内容を消去
