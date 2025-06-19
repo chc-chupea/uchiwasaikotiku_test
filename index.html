@@ -239,19 +239,21 @@
       overlay.src = currentLowRes + '?t=' + Date.now();
     });
 
+
     captureBtn.addEventListener('click', () => {
       shutterSound.currentTime = 0;
       shutterSound.play().catch(() => {});
-
-      const photoLinkInfo = document.getElementById('photoLinkInfo');
-      if (photoLinkInfo) {
-        photoLinkInfo.style.display = 'none';
-      }
 
       const w = 3508, h = 2480;
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
+
+      // 念のため video 準備が整っているか確認
+      if (video.readyState < 2) {
+        alert('カメラの準備ができていません。もう一度お試しください。');
+        return;
+      }
 
       const vw = video.videoWidth || video.offsetWidth;
       const vh = video.videoHeight || video.offsetHeight;
@@ -273,9 +275,11 @@
       highresImg.crossOrigin = "anonymous";
       highresImg.onload = () => {
         ctx.drawImage(highresImg, 0, 0, w, h);
+
         canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
 
+          // ✅ プレビュー表示
           let previewImg = document.getElementById('previewImage');
           if (!previewImg) {
             previewImg = document.createElement('img');
@@ -286,33 +290,34 @@
             previewImg.style.borderRadius = '10px';
             document.body.appendChild(previewImg);
           }
+          previewImg.src = url;
 
-          previewImg.onload = () => {
-            notice.style.display = 'block';
-            notice.innerHTML = `
-              📱iPhoneユーザーの方へ👆画像を長押しして「“写真”に追加」を選んで保存してください。<br><br>
-              保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
-        `    ;
-
-            const manualButton = document.createElement('a');
-            manualButton.href = formURL;
-            manualButton.target = '_blank';
-            manualButton.innerText = '📝 注文フォームへ進む';
-            manualButton.className = 'form-button';
-            notice.appendChild(manualButton);
-            notice.scrollIntoView({ behavior: 'smooth' });
-          };
-
-          previewImg.src = url;  // onloadのあとに設定
-
+          // ✅ 保存処理
           const a = document.createElement('a');
           a.href = url;
           a.download = getTimestampBasedFileName();
           a.click();
+
+          // ✅ 案内表示
+          notice.style.display = 'block';
+          notice.innerHTML = `
+            👆画像を長押しして「“写真”に追加」を選んで保存してください。<br><br>
+            保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
+          `;
+          const manualButton = document.createElement('a');
+          manualButton.href = formURL;
+          manualButton.target = '_blank';
+          manualButton.innerText = '📝 注文フォームへ進む';
+          manualButton.className = 'form-button';
+          notice.appendChild(manualButton);
+          notice.scrollIntoView({ behavior: 'smooth' });
+
         }, 'image/png');
-      };
+          };
+
       highresImg.src = currentHighRes;
     });
+
 
     startCamera(); // 初期起動時にカメラON
 
