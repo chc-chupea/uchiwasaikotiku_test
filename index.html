@@ -2,9 +2,9 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Myうちわ</title>
   <style>
     body {
@@ -34,28 +34,22 @@
     canvas {
       display: none;
     }
-    #captureBtn {
-      background: transparent;
+    #captureBtn, #switchCameraBtn {
+      margin-top: 15px;
+      background: none;
       border: none;
-      padding: 0;
       cursor: pointer;
     }
-
     #captureBtn img {
       width: 60px;
       height: auto;
-      display: block;
-      background-color: transparent;
-      border-radius: 50%;
     }
-    
     #switchCameraBtn {
       font-size: 16px;
       padding: 8px 16px;
       background-color: #eee;
       border-radius: 8px;
       border: 1px solid #ccc;
-      margin-top: 10px;
     }
     #notice {
       margin-top: 15px;
@@ -80,64 +74,22 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 10px rgba(0,0,0,0.15);
     }
-    #langButtons {
-      margin-bottom: 10px;
-    }
-    #langButtons button {
-      margin: 0 5px;
-      padding: 5px 10px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    #overlay {
-      position: absolute;
-      cursor: grab;
-    }
-    #savedImageContainer img {
-      max-width: 90%;
-      border: 2px solid #ccc;
-      border-radius: 12px;
-      margin-top: 20px;
-    }
-    #saveGuide {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #333;
-    }
+    #overlay { position: absolute; cursor: grab; }
+    #downloadNotice { font-size: 0.7em; }
   </style>
 </head>
 <body>
-  <div id="langButtons">
-    <button onclick="setLanguage('ja')">日本語</button>
-    <button onclick="setLanguage('en')">English</button>
-    <button onclick="setLanguage('zh')">中文</button>
-    <button onclick="setLanguage('ko')">한국어</button>
-    <button onclick="setLanguage('vi')">Tiếng Việt</button>
-  </div>
-
-  <h1 id="title" data-ja="作っちゃおう！Myうちわ" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">作っちゃおう！Myうちわ</h1>
-
-  <label id="templateLabel" data-ja="うちわのデザインを選んでね👉" data-en="Choose a fan design👉" data-zh="请选择一个团扇设计👉" data-ko="부채 디자인을 선택하세요👉" data-vi="Chọn thiết kế quạt:">うちわのデザインを選んでね👉</label>
-  <select id="templateSelector">
-    <option value="fan1-lowres.png" data-highres="fan1-highres.png">無地</option>
-    <option value="fan2-lowres.png" data-highres="fan2-highres.png">夏祭り</option>
-    <option value="fan3-lowres.png" data-highres="fan3-highres.png">父の日</option>
-  </select>
-
+  <h1>作っちゃおう！Myうちわ</h1>
   <div id="videoWrapper">
     <video id="video" autoplay playsinline></video>
     <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像">
     <canvas id="canvas"></canvas>
   </div>
-
   <button id="captureBtn"><img src="shutterbotann.png" alt="シャッターボタン"></button>
   <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
-
+  <p id="downloadNotice"></p>
+  <p id="notice" style="display:none;"></p>
   <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
-  <div id="notice"></div>
-  <div id="savedImageContainer"></div>
-  <div id="saveGuide"></div>
-
   <script>
     const video = document.getElementById('video');
     const overlay = document.getElementById('overlay');
@@ -145,31 +97,29 @@
     const shutterSound = document.getElementById('shutterSound');
     const captureBtn = document.getElementById('captureBtn');
     const switchCameraBtn = document.getElementById('switchCameraBtn');
-    const templateSelector = document.getElementById('templateSelector');
     const notice = document.getElementById('notice');
-    const savedImageContainer = document.getElementById('savedImageContainer');
-    const saveGuide = document.getElementById('saveGuide');
     const formURL = 'https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog';
 
-    let currentLowRes = templateSelector.value;
-    let currentHighRes = templateSelector.selectedOptions[0].dataset.highres;
     let currentFacingMode = 'user';
     let currentStream = null;
 
-    function setLanguage(lang) {
-      document.querySelectorAll('[data-ja]').forEach(el => {
-        if (el.dataset[lang]) el.innerHTML = el.dataset[lang];
-      });
+    function getTimestampBasedFileName() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const h = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      const slot = Math.floor(min / 30) * 30;
+      const rand = Math.floor(Math.random() * 900) + 100;
+      return `uchiwa_${y}${m}${d}_${h}${String(slot).padStart(2, '0')}_${rand}.png`;
     }
 
     function startCamera() {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
-        .then(stream => {
-          currentStream = stream;
-          video.srcObject = stream;
-        })
-        .catch(err => alert('カメラにアクセスできませんでした'));
+        .then(stream => { video.srcObject = stream; currentStream = stream; })
+        .catch(() => alert('カメラにアクセスできません'));
     }
 
     switchCameraBtn.onclick = () => {
@@ -177,27 +127,18 @@
       startCamera();
     };
 
-    templateSelector.onchange = e => {
-      const selected = e.target.selectedOptions[0];
-      currentLowRes = selected.value;
-      currentHighRes = selected.dataset.highres;
-      overlay.style.display = 'none';
-      overlay.onload = () => overlay.style.display = 'block';
-      overlay.src = currentLowRes + '?t=' + Date.now();
-    };
-
     captureBtn.onclick = () => {
       shutterSound.currentTime = 0;
       shutterSound.play();
-
       const w = 3508, h = 2480;
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
-      const vw = video.videoWidth, vh = video.videoHeight;
-      const aspectVideo = vw / vh, aspectCanvas = w / h;
+      const vw = video.videoWidth || video.offsetWidth;
+      const vh = video.videoHeight || video.offsetHeight;
+      const aspectVideo = vw / vh;
+      const aspectCanvas = w / h;
       let sx = 0, sy = 0, sw = vw, sh = vh;
-
       if (aspectVideo > aspectCanvas) {
         sw = vh * aspectCanvas;
         sx = (vw - sw) / 2;
@@ -205,49 +146,36 @@
         sh = vw / aspectCanvas;
         sy = (vh - sh) / 2;
       }
-
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
-
-      const highresImg = new Image();
-      highresImg.onload = () => {
-        ctx.drawImage(highresImg, 0, 0, w, h);
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-
-          // 自動ダウンロード
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'uchiwa.png';
-          a.click();
-
-          // 安定して画像表示する
-          savedImageContainer.innerHTML = '';
-          const savedImg = document.createElement('img');
-          savedImg.src = url;
-          savedImg.alt = '保存画像';
-          savedImg.style.maxWidth = '90%';
-          savedImg.style.border = '2px solid #ccc';
-          savedImg.style.borderRadius = '12px';
-          savedImg.style.marginTop = '20px';
-
-          savedImg.onload = () => {
-            saveGuide.innerHTML = `📱【iPhoneをお使いの方へ】👆 この画像を<strong style="color:red;">長押し</strong>して「<strong>“写真”に保存</strong>」してください<br>✅保存後は上のボタンから<strong style="color:blue;">注文フォームへ</strong>`;
-            notice.innerHTML = `<a href="${formURL}" target="_blank" class="form-button">📝 注文フォームへ進む</a>`;
-            notice.scrollIntoView({ behavior: 'smooth' });
-          };
-
-          savedImageContainer.appendChild(savedImg);
-        });
-      };
-      highresImg.src = currentHighRes;
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = getTimestampBasedFileName();
+        a.click();
+        let img = document.getElementById('savedImage');
+        if (!img) {
+          img = document.createElement('img');
+          img.id = 'savedImage';
+          img.style.maxWidth = '80%';
+          img.style.marginTop = '15px';
+          img.style.border = '1px solid #ccc';
+          document.body.appendChild(img);
+        }
+        img.src = url;
+        notice.style.display = 'block';
+        notice.innerHTML = `⬇️ この画像を<strong style='color:red;'>長押し</strong>して「写真に追加」で保存できます`;
+        const btn = document.createElement('a');
+        btn.href = formURL;
+        btn.target = '_blank';
+        btn.innerText = '📝 注文フォームへ進む';
+        btn.className = 'form-button';
+        notice.appendChild(btn);
+        notice.scrollIntoView({ behavior: 'smooth' });
+      }, 'image/png');
     };
 
     startCamera();
-    window.addEventListener('DOMContentLoaded', () => {
-      const userLang = navigator.language.slice(0, 2);
-      const supportedLangs = ['ja', 'en', 'zh', 'ko', 'vi'];
-      if (supportedLangs.includes(userLang)) setLanguage(userLang);
-    });
   </script>
 </body>
 </html>
