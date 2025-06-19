@@ -275,12 +275,7 @@
         ctx.drawImage(highresImg, 0, 0, w, h);
         canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = getTimestampBasedFileName();
-          a.click();
 
-          // 表示用 <img> を生成
           let previewImg = document.getElementById('previewImage');
           if (!previewImg) {
             previewImg = document.createElement('img');
@@ -291,22 +286,29 @@
             previewImg.style.borderRadius = '10px';
             document.body.appendChild(previewImg);
           }
-          previewImg.src = url;
 
-          // 誘導表示
-          notice.style.display = 'block';
-          notice.innerHTML = `
-            👆画像を長押しして「“写真”に追加」を選んで保存してください。<br><br>
-            保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
-          `;
+          previewImg.onload = () => {
+            notice.style.display = 'block';
+            notice.innerHTML = `
+              📱iPhoneユーザーの方へ👆画像を長押しして「“写真”に追加」を選んで保存してください。<br><br>
+              保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
+        `    ;
 
-          const manualButton = document.createElement('a');
-          manualButton.href = formURL;
-          manualButton.target = '_blank';
-          manualButton.innerText = '📝 注文フォームへ進む';
-          manualButton.className = 'form-button';
-          notice.appendChild(manualButton);
-          notice.scrollIntoView({ behavior: 'smooth' });
+            const manualButton = document.createElement('a');
+            manualButton.href = formURL;
+            manualButton.target = '_blank';
+            manualButton.innerText = '📝 注文フォームへ進む';
+            manualButton.className = 'form-button';
+            notice.appendChild(manualButton);
+            notice.scrollIntoView({ behavior: 'smooth' });
+          };
+
+          previewImg.src = url;  // onloadのあとに設定
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = getTimestampBasedFileName();
+          a.click();
         }, 'image/png');
       };
       highresImg.src = currentHighRes;
