@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Myうちわ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 10px;
+    }
+    #videoWrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background-color: black;
+      overflow: hidden;
+      margin: auto;
+      max-width: 900px;
+    }
+    video, img.overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    canvas {
+      display: none;
+    }
+    #captureBtn, #switchCameraBtn {
+      margin-top: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    #captureBtn img {
+      width: 60px;
+      height: auto;
+    }
+    #switchCameraBtn {
+      font-size: 16px;
+      padding: 8px 16px;
+      background-color: #eee;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #notice {
+      margin-top: 15px;
+      font-size: 14px;
+      color: green;
+    }
+    #notice a {
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .form-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #2196f3, #1976d2);
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    .form-button:hover {
+      background: linear-gradient(135deg, #1976d2, #0d47a1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+    }
+    #downloadNotice {
+      font-size: 12px;
+      color: #555;
+      margin-top: 10px;
+    }
+    #langButtons {
+      margin-top: 10px;
+    }
+    #langButtons button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    @media print {
+      body *:not(.printable) {
+        display: none !important;
+      }
+      .printable {
+        display: block !important;
+      }
+    }
+    @media (max-width: 600px) {
+      #switchCameraBtn, #captureBtn img {
+        width: 100%;
+        font-size: 14px;
+      }
+      .form-button {
+        width: 90%;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="langButtons">
+    <button onclick="setLanguage('ja')">日本語</button>
+    <button onclick="setLanguage('en')">English</button>
+    <button onclick="setLanguage('zh')">中文</button>
+    <button onclick="setLanguage('ko')">한국어</button>
+    <button onclick="setLanguage('vi')">Tiếng Việt</button>
+  </div>
+  <h1 id="title" class="printable" data-ja="作っちゃおう！Myうちわ" data-en="Let's Make Our Own Fan!" data-zh="一起来制作我们的团扇！" data-ko="우리만의 부채를 만들어보자!" data-vi="Hãy cùng làm quạt giấy của riêng mình!">Myうちわ</h1>
+  <label for="templateSelector" data-ja="うちわのデザインを選んでね👉" data-en="Choose a fan design👉" data-zh="请选择一个团扇设计👉" data-ko="부채 디자인을 선택하세요👉" data-vi="Chọn thiết kế quạt:">うちわのデザインを選んでね👉</label>
+  <select id="templateSelector">
+    <option value="fan1-lowres.png" data-highres="fan1-highres.png">無地</option>
+    <option value="fan2-lowres.png" data-highres="fan2-highres.png">夏祭り</option>
+    <option value="fan3-lowres.png" data-highres="fan3-highres.png">父の日</option>
+  </select>
+  <div id="videoWrapper">
+    <video id="video" autoplay playsinline></video>
+    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="Overlay">
+    <canvas id="canvas"></canvas>
+  </div>
+  <button id="captureBtn"><img src="shutterbotann.png" alt="撮影"></button>
+  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
+  <div id="notice"></div>
+  <div id="downloadNotice"></div>
+  <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
+  <script>
+    const langText = {
+      ja: {
+        saveTip: '📱 iPhoneの方へ：この画像を<strong>長押しして「写真に追加」</strong>してください。',
+        form: '📝 注文フォームへ進む'
+      },
+      en: {
+        saveTip: '📱 iPhone users: <strong>long-press this image and choose “Add to Photos”</strong>.',
+        form: '📝 Proceed to Order Form'
+      },
+      zh: {
+        saveTip: '📱 iPhone用户：<strong>长按此图像并选择“添加到照片”</strong>。',
+        form: '📝 前往订购表单'
+      },
+      ko: {
+        saveTip: '📱 iPhone 사용자: <strong>이 이미지를 길게 눌러 “사진에 추가”를 선택하세요</strong>.',
+        form: '📝 주문 양식으로 이동'
+      },
+      vi: {
+        saveTip: '📱 Người dùng iPhone: <strong>Nhấn và giữ hình ảnh này rồi chọn “Thêm vào Ảnh”</strong>.',
+        form: '📝 Đi đến Mẫu đặt hàng'
+      }
+    };
+    const formURL = 'https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog';
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const shutter = document.getElementById('shutterSound');
+    const notice = document.getElementById('notice');
+    const selector = document.getElementById('templateSelector');
+    let lang = 'ja';
+    function setLanguage(l) {
+      lang = l;
+      document.querySelectorAll('[data-' + l + ']').forEach(el => {
+        el.innerHTML = el.dataset[l];
+      });
+      updateDownloadNotice();
+    }
+    function updateDownloadNotice() {
+      document.getElementById('downloadNotice').innerHTML = langText[lang]?.saveTip || langText['ja'].saveTip;
+    }
+    selector.addEventListener('change', e => {
+      overlay.src = e.target.value;
+      overlay.dataset.highres = e.target.selectedOptions[0].dataset.highres;
+    });
+    document.getElementById('captureBtn').addEventListener('click', () => {
+      shutter.play();
+      canvas.width = 3508;
+      canvas.height = 2480;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const highresImg = new Image();
+      highresImg.onload = () => {
+        ctx.drawImage(highresImg, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'uchiwa.png';
+          a.click();
+          notice.innerHTML = `<p>${langText[lang]?.saveTip || langText['ja'].saveTip}</p><img src="${url}" style="max-width:90%; margin-top:10px; border:1px solid #ccc;">`;
+          const formBtn = document.createElement('a');
+          formBtn.href = formURL;
+          formBtn.className = 'form-button';
+          formBtn.target = '_blank';
+          formBtn.textContent = langText[lang]?.form || langText['ja'].form;
+          notice.appendChild(formBtn);
+        });
+      };
+      highresImg.crossOrigin = 'anonymous';
+      highresImg.src = selector.selectedOptions[0].dataset.highres;
+    });
+    document.getElementById('switchCameraBtn').addEventListener('click', () => {
+      facing = facing === 'user' ? 'environment' : 'user';
+      startCamera();
+    });
+    let facing = 'user';
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } })
+        .then(stream => {
+          video.srcObject = stream;
+        });
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      const userLang = navigator.language.slice(0, 2);
+      if (['ja', 'en', 'zh', 'ko', 'vi'].includes(userLang)) {
+        setLanguage(userLang);
+      }
+      startCamera();
+    });
+  </script>
+</body>
+</html>
