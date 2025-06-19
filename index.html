@@ -241,6 +241,11 @@
 
 
     captureBtn.addEventListener('click', () => {
+
+    if (video.readyState < 2) {
+      alert('カメラがまだ準備中です。数秒待ってから、もう一度シャッターを押してください。');
+      return;
+    }
       shutterSound.currentTime = 0;
       shutterSound.play().catch(() => {});
 
@@ -290,6 +295,7 @@
             previewImg.style.borderRadius = '10px';
             document.body.appendChild(previewImg);
           }
+          previewImg.src = "";   // ← 一度リセット（重要！）
           previewImg.src = url;
 
           // ✅ 保存処理
