@@ -203,16 +203,29 @@
         canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
 
+          // 自動ダウンロード
           const a = document.createElement('a');
           a.href = url;
           a.download = 'uchiwa.png';
           a.click();
 
-          savedImageContainer.innerHTML = `<img src="${url}" alt="保存画像">`;
-          saveGuide.innerHTML = `👆 この画像を<strong style="color:red;">長押し</strong>して「<strong>“写真”に追加</strong>」してください📱<br>保存後は以下のボタンから申込フォームへ⬇️`;
+          // 安定して画像表示する
+          savedImageContainer.innerHTML = '';
+          const savedImg = document.createElement('img');
+          savedImg.src = url;
+          savedImg.alt = '保存画像';
+          savedImg.style.maxWidth = '90%';
+          savedImg.style.border = '2px solid #ccc';
+          savedImg.style.borderRadius = '12px';
+          savedImg.style.marginTop = '20px';
 
-          notice.innerHTML = `<a href="${formURL}" target="_blank" class="form-button">📝 注文フォームへ進む</a>`;
-          notice.scrollIntoView({ behavior: 'smooth' });
+          savedImg.onload = () => {
+            saveGuide.innerHTML = `👆 この画像を<strong style="color:red;">長押し</strong>して「<strong>“写真”に追加</strong>」してください📱<br>保存後は以下のボタンから申込フォームへ⬇️`;
+            notice.innerHTML = `<a href="${formURL}" target="_blank" class="form-button">📝 注文フォームへ進む</a>`;
+            notice.scrollIntoView({ behavior: 'smooth' });
+          };
+
+          savedImageContainer.appendChild(savedImg);
         });
       };
       highresImg.src = currentHighRes;
