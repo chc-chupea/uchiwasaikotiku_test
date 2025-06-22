@@ -296,7 +296,9 @@
             document.body.appendChild(previewImg);
           }
           previewImg.src = "";   // ← 一度リセット（重要！）
-          previewImg.src = url;
+          setTimeout(() => {
+            previewImg.src = url; // iOS対策：非同期で反映
+          }, 0);
 
           // ✅ 保存処理
           const a = document.createElement('a');
