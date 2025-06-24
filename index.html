@@ -115,6 +115,10 @@
   </style>
 </head>
 <body>
+  <div id="previewWrapper" style="display:none;">
+    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;">
+  </div>
+
   <div id="langButtons">
     <button onclick="setLanguage('ja')">日本語</button>
     <button onclick="setLanguage('en')">English</button>
@@ -285,19 +289,18 @@
           const url = URL.createObjectURL(blob);
 
           // ✅ プレビュー表示
-          let previewImg = document.getElementById('previewImage');
-          if (!previewImg) {
-            previewImg = document.createElement('img');
-            previewImg.id = 'previewImage';
-            previewImg.style.maxWidth = '90%';
-            previewImg.style.marginTop = '20px';
-            previewImg.style.border = '1px solid #ccc';
-            previewImg.style.borderRadius = '10px';
-            document.body.appendChild(previewImg);
-          }
-          previewImg.src = "";   // ← 一度リセット（重要！）
+          const previewWrapper = document.getElementById('previewWrapper');
+          const previewImg = document.getElementById('previewImage');
+
+          previewWrapper.style.display = 'block';
+          previewImg.src = "";
+
+          previewImg.onload = () => {
+            notice.scrollIntoView({ behavior: 'smooth' }); // 案内が見えるように下へスクロール
+          };
+
           setTimeout(() => {
-            previewImg.src = url; // iOS対策：非同期で反映
+            previewImg.src = url;
           }, 0);
 
           // ✅ 保存処理
