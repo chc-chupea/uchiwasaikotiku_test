@@ -292,17 +292,14 @@
           const previewWrapper = document.getElementById('previewWrapper');
           const previewImg = document.getElementById('previewImage');
 
-          previewWrapper.style.display = 'block';
-          previewImg.src = "";
-
           previewImg.onload = () => {
             notice.scrollIntoView({ behavior: 'smooth' }); // 案内が見えるように下へスクロール
           };
 
-          setTimeout(() => {
-            previewImg.src = url;
-          }, 0);
-
+          previewWrapper.style.display = 'block';
+          previewImg.src = url;
+          
+          
           // ✅ 保存処理
           const a = document.createElement('a');
           a.href = url;
