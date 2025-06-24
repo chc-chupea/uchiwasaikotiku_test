@@ -292,12 +292,17 @@
           const previewWrapper = document.getElementById('previewWrapper');
           const previewImg = document.getElementById('previewImage');
 
+          // ① onload 登録
           previewImg.onload = () => {
             notice.scrollIntoView({ behavior: 'smooth' }); // 案内が見えるように下へスクロール
           };
 
-          previewWrapper.style.display = 'block';
+          // ② src をセット（onload が発火する）
           previewImg.src = url;
+
+          // ③ 表示ブロック（src 読み込み中でも表示されるように）
+          previewWrapper.style.display = 'block';
+
           
           
           // ✅ 保存処理
