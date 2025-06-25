@@ -297,6 +297,8 @@
             notice.scrollIntoView({ behavior: 'smooth' }); // 案内が見えるように下へスクロール
           };
 
+          previewImg.src = ''; // 💡 一旦クリア（保険）
+
           // ② src をセット（onload が発火する）
           previewImg.src = url;
 
