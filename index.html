@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Myうちわ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 10px;
+    }
+    #videoWrapper {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 4 / 3;
+      margin: 0 auto;
+      background-color: black;
+      overflow: hidden;
+    }
+    video, img.overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    canvas {
+      display: none;
+    }
+    #captureBtn, #switchCameraBtn {
+      margin-top: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    #captureBtn img {
+      width: 60px;
+      height: auto;
+    }
+    #switchCameraBtn {
+      font-size: 16px;
+      padding: 8px 16px;
+      background-color: #eee;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #notice {
+      margin-top: 15px;
+      color: green;
+      font-weight: bold;
+    }
+    #notice a:not(.form-button) {
+      color: #0077cc;
+      text-decoration: underline;
+    }
+
+    .form-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #2196f3, #1976d2);
+      color: white;
+      padding: 12px 24px;
+      margin-top: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    .form-button:hover {
+      background: linear-gradient(135deg, #1976d2, #0d47a1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+    }
+
+    #langButtons {
+      margin-top: 10px;
+    }
+    #langButtons button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #overlay {
+      position: absolute;
+      cursor: grab;
+    }
+    .fan-container {
+      display: none;
+    }
+    .fan-print {
+      display: none;
+    }
+    @media print {
+      .fan-screen {
+        display: none !important;
+      }
+      .fan-print {
+        display: block !important;
+      }
+    }
+    #downloadNotice {
+      font-size: 0.7em; /* もとの半分のサイズ */
+    }
+
+  </style>
+</head>
+<body>
+
+
+  <div id="langButtons">
+    <button onclick="setLanguage('ja')">日本語</button>
+    <button onclick="setLanguage('en')">English</button>
+    <button onclick="setLanguage('zh')">中文</button>
+    <button onclick="setLanguage('ko')">한국어</button>
+    <button onclick="setLanguage('vi')">Tiếng Việt</button>
+  </div>
+
+  <h1 id="title" style="font-size: 14px;"
+      data-ja="作っちゃおう！Myうちわ"
+      data-en="Let's Make Our Own Fan!"
+      data-zh="一起来制作我们的团扇！"
+      data-ko="우리만의 부채를 만들어보자!"
+      data-vi="Hãy cùng làm quạt giấy của riêng mình!">
+    作っちゃおう！Myうちわ
+  </h1>
+
+  <label id="templateLabel" style="font-size: 14px;"
+         data-ja="うちわのデザインを選んでね👉"
+         data-en="Choose a fan design👉"
+         data-zh="请选择一个团扇设计👉"
+         data-ko="부채 디자인을 선택하세요👉"
+         data-vi="Chọn thiết kế quạt:">
+    うちわのデザインを選んでね👉
+  </label>
+  <select id="templateSelector">
+    <option value="fan1-lowres.png" data-highres="fan1-highres.png">無地</option>
+    <option value="fan2-lowres.png" data-highres="fan2-highres.png">夏祭り</option>
+    <option value="fan3-lowres.png" data-highres="fan3-highres.png">父の日</option>
+  </select>
+
+  <div id="videoWrapper">
+    <video id="video" autoplay playsinline></video>
+    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <button id="captureBtn">
+    <img src="shutterbotann.png" alt="シャッターボタン">
+  </button>
+
+  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
+
+  <!-- 保存案内をここに表示 -->
+  <p id="downloadNotice" class="text-center text-sm mt-2 text-gray-600"></p>
+
+  <div id="previewWrapper" style="display:none;">
+    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;">
+  </div>
+
+
+  <p id="notice" style="display:none;"></p>
+  <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
+  <div class="fan-container"></div>
+
+    <script>
+    // 💡画像のファイル名をつける魔法！
+    function getTimestampBasedFileName() {
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
+      const h = String(today.getHours()).padStart(2, '0');
+      const min = String(today.getMinutes()).padStart(2, '0');
+
+      // 30分ごとに箱を分ける
+      const minuteSlot = Math.floor(parseInt(min) / 30) * 30;  // 0 or 30分
+      const formattedMinuteSlot = String(minuteSlot).padStart(2, '0'); 
+
+      // 3桁のランダムな番号（100〜999）
+      const randomNumber = Math.floor(Math.random() * 900) + 100;  // 100〜999の範囲
+
+      // ファイル名を生成
+      return `uchiwa_${y}${m}${d}_${h}${formattedMinuteSlot}_${randomNumber}.png`;
+    }
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const canvas = document.getElementById('canvas');
+    const shutterSound = document.getElementById('shutterSound');
+    const captureBtn = document.getElementById('captureBtn');
+    const switchCameraBtn = document.getElementById('switchCameraBtn');
+    const notice = document.getElementById('notice');
+    const templateSelector = document.getElementById('templateSelector');
+    const formURL = 'https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog';
+
+    let currentLowRes = templateSelector.value;
+    let currentHighRes = templateSelector.selectedOptions[0].dataset.highres;
+
+    let currentFacingMode = 'user';
+    let currentStream = null;
+
+    function setLanguage(lang) {
+      document.querySelectorAll('[data-ja]').forEach(el => {
+        if (el.dataset[lang]) {
+          el.innerHTML = el.dataset[lang];
+        }
+      });
+    }
+
+    function startCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
+        .then(stream => {
+          currentStream = stream;
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          alert('カメラにアクセスできませんでした');
+          console.error(err);
+        });
+    }
+
+    switchCameraBtn.addEventListener('click', () => {
+      currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+      startCamera();
+    });
+
+    templateSelector.addEventListener('change', e => {
+      const selectedOption = e.target.selectedOptions[0];
+      currentLowRes = selectedOption.value;
+      currentHighRes = selectedOption.dataset.highres;
+      overlay.style.display = 'none';
+      overlay.onload = null;
+      overlay.onload = () => { overlay.style.display = 'block'; };
+      overlay.src = currentLowRes + '?t=' + Date.now();
+    });
+
+
+    captureBtn.addEventListener('click', () => {
+
+    if (video.readyState < 2) {
+      alert('カメラがまだ準備中です。数秒待ってから、もう一度シャッターを押してください。');
+      return;
+    }
+      shutterSound.currentTime = 0;
+      shutterSound.play().catch(() => {});
+
+      const w = 3508, h = 2480;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // 念のため video 準備が整っているか確認
+      if (video.readyState < 2) {
+        alert('カメラの準備ができていません。もう一度お試しください。');
+        return;
+      }
+
+      const vw = video.videoWidth || video.offsetWidth;
+      const vh = video.videoHeight || video.offsetHeight;
+      const aspectVideo = vw / vh;
+      const aspectCanvas = w / h;
+      let sx = 0, sy = 0, sw = vw, sh = vh;
+
+      if (aspectVideo > aspectCanvas) {
+        sw = vh * aspectCanvas;
+        sx = (vw - sw) / 2;
+      } else {
+        sh = vw / aspectCanvas;
+        sy = (vh - sh) / 2;
+      }
+
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+
+      const highresImg = new Image();
+      highresImg.crossOrigin = "anonymous";
+      highresImg.onload = () => {
+        ctx.drawImage(highresImg, 0, 0, w, h);
+
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+
+          // ✅ プレビュー表示
+          const previewWrapper = document.getElementById('previewWrapper');
+          const previewImg = document.getElementById('previewImage');
+
+          // ① onload 登録
+          previewImg.onload = () => {
+            notice.scrollIntoView({ behavior: 'smooth' }); // 案内が見えるように下へスクロール
+          };
+
+          previewImg.src = ''; // 💡 一旦クリア（保険）
+
+          // ② src をセット（onload が発火する）
+          previewImg.src = url;
+
+
+          // ✅ 保存処理
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = getTimestampBasedFileName();
+          a.click();
+
+          // ③ 表示ブロック（src 読み込み中でも表示されるように）
+          previewWrapper.style.display = 'block';
+
+          // ✅ 案内表示
+          notice.style.display = 'block';
+          notice.innerHTML = `
+            👇画像を長押しして「“写真”に追加」を選んで保存してください。<br><br>
+            保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
+          `;
+
+          const manualButton = document.createElement('a');
+          manualButton.href = formURL;
+          manualButton.target = '_blank';
+          manualButton.innerText = '📝 注文フォームへ進む';
+          manualButton.className = 'form-button';
+          notice.appendChild(manualButton);
+
+          notice.scrollIntoView({ behavior: 'smooth' });
+
+        }, 'image/png');
+          };
+
+      highresImg.src = currentHighRes;
+    });
+
+
+    startCamera(); // 初期起動時にカメラON
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const userLang = navigator.language.slice(0, 2); // 例: "ja"
+      const supportedLangs = ['ja', 'en', 'zh', 'ko', 'vi'];
+      if (supportedLangs.includes(userLang)) {
+        setLanguage(userLang);
+      }
+    });
+  </script>
+
+  <p id="photoLinkInfo" style="margin-top: 30px; font-size: 14px; text-align: center;">
+    📁 カメラで撮らず、スマホに保存してある写真でうちわを作りたい方はこちら<br>
+    <a href="https://chc-chupea.github.io/my-uchiwa-studio/" target="_blank"
+       style="display: inline-block; margin-top: 10px; padding: 8px 16px; background-color: #0077cc; color: white; text-decoration: none; border-radius: 8px;">
+       ▶️ 写真や画像からうちわを作るページへ
+    </a>
+  </p>
+
+  <footer style="font-size: 6px; color: #888;">
+  © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>
+  このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>
+  ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
+ </footer>
+
+<!-- ページの一番下、</body>の直前に追加 -->
+  <script>
+    const messages = {
+      ja: `
+        ※「uchiwa_20250726_xxx_xxx.png を保存しますか？」という表示が出たら<br>
+        iPhoneをご利用の方は以下を参考にしてください<br>
+        ・「ファイル」アプリで管理している方 → <span style="color: red;">「ダウンロード」</span>を選択<br>
+        ・「写真」アプリに保存したい方 → 「表示」を押して画像を長押し →<span style="color: red;">「“写真”に追加」</span> を選んで保存してください。保存後は、画面左下にある 「<span style="color: blue;">＜</span>」ボタン（または「ブラウザ」のアイコン）を押すと元の画面に戻れます。
+      `,
+      en: `
+        ※If prompted with “Save uchiwa_01.png?”, <br>
+        iPhone users, please refer to the following:<br>
+        ・If using the “Files” app → Select “Downloads”<br>
+        ・If you want to save to the “Photos” app → Tap “View”, then long-press the image → Select “Add to Photos”
+    `  ,
+      zh: `
+        ※出现“是否保存 uchiwa_01.png？”提示时，<br>
+        iPhone用户请参考以下说明：<br>
+        ・使用“文件”应用管理 → 请选择“下载”<br>
+        ・想保存到“照片” → 点击“显示”后长按图片 → 选择“添加到照片”
+    `  ,
+      ko: `
+        ※“uchiwa_01.png을 저장하시겠습니까?”라는 메시지가 표시되면 “저장”을 선택하세요.<br>
+        iPhone 사용자는 아래 내용을 참고하세요:<br>
+        ・“파일” 앱을 사용하는 경우 → “다운로드” 선택<br>
+        ・“사진” 앱에 저장하려면 → “보기”를 누르고 이미지 길게 누름 → “사진에 추가” 선택
+      `,
+      vi: `
+        ※Nếu xuất hiện thông báo “Bạn có muốn lưu uchiwa_01.png?”, <br>
+        Người dùng iPhone vui lòng tham khảo:<br>
+        ・Nếu sử dụng ứng dụng “Tệp” → Chọn “Tải xuống”<br>
+        ・Nếu muốn lưu vào “Ảnh” → Nhấn “Hiển thị”, sau đó nhấn giữ ảnh → Chọn “Thêm vào Ảnh”
+      `
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const lang = navigator.language.toLowerCase();
+      const baseLang = lang.split('-')[0]; // 例: "ja-JP" → "ja"
+      const notice = messages[baseLang] || messages['ja']; // デフォルトは日本語More actions
+      document.getElementById('downloadNotice').innerHTML = notice;
+    });
+  </script>
+
+</body>
+</html>
