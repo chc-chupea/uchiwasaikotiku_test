@@ -115,10 +115,6 @@
   </style>
 </head>
 <body>
-  <div id="previewWrapper" style="display:none;">
-    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;">
-  </div>
-
   <div id="langButtons">
     <button onclick="setLanguage('ja')">日本語</button>
     <button onclick="setLanguage('en')">English</button>
@@ -152,7 +148,7 @@
 
   <div id="videoWrapper">
     <video id="video" autoplay playsinline></video>
-    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像">
+    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわのテンプレート画像（初期：無地）">
     <canvas id="canvas"></canvas>
   </div>
 
@@ -319,6 +315,11 @@
             👆画像を長押しして「“写真”に追加」を選んで保存してください。<br><br>
             保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
           `;
+
+          <div id="previewWrapper" style="display:none;">
+            <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;">
+          </div>
+
           const manualButton = document.createElement('a');
           manualButton.href = formURL;
           manualButton.target = '_blank';
