@@ -31,11 +31,10 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      touch-action: none; /* for gesture support */
     }
     video {
       transform-origin: center center;
-      touch-action: none;
-      /* prevent browser pinch-zoom */
     }
     canvas {
       display: none;
@@ -61,10 +60,6 @@
       margin-top: 15px;
       color: green;
       font-weight: bold;
-    }
-    #notice a:not(.form-button) {
-      color: #0077cc;
-      text-decoration: underline;
     }
     .form-button {
       display: inline-block;
@@ -97,32 +92,19 @@
       position: absolute;
       cursor: grab;
     }
-    .fan-container {
-      display: none;
-    }
-    .fan-print {
+    .fan-container, .fan-print {
       display: none;
     }
     @media print {
-      .fan-screen {
-        display: none !important;
-      }
-      .fan-print {
-        display: block !important;
-      }
+      .fan-screen { display: none !important; }
+      .fan-print { display: block !important; }
     }
     #downloadNotice {
       font-size: 0.7em;
     }
-    /* ズームスライダーのスタイル調整 */
-    #zoomSlider {
-      width: 80%;
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
-
   <div id="langButtons">
     <button onclick="setLanguage('ja')">日本語</button>
     <button onclick="setLanguage('en')">English</button>
@@ -160,10 +142,16 @@
     <canvas id="canvas"></canvas>
   </div>
 
-  <div>
+  <!-- ここに説明文を入れる -->
+
+  <div id="pinchZoomNotice" style="font-size: 14px; margin-top: 8px; color: #555;">
+    画面を<span style="font-weight:bold;">2本の指でつまむように</span>してズームできます（ピンチイン・ピンチアウト）
+  </div>
+
+  <div style="margin-top: 10px;">
     <label for="zoomSlider">🔍 ズーム：</label>
-    <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1">
-    <span id="zoomValue">1.0x</span>
+    <input type="range" id="zoomSlider" min="1" max="3" step="0.01" value="1" style="width: 80%;">
+    <span id="zoomValue">1.00x</span>
   </div>
 
   <button id="captureBtn">
@@ -182,204 +170,53 @@
 
   <div id="formButtonWrapper" style="display: block; margin-top: 12px;">
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog"
-     target="_blank"
-     class="form-button">📝 注文フォームへ進む</a>
+     target="_blank" class="form-button">📝 注文フォームへ進む</a>
   </div>
 
   <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
   <div class="fan-container"></div>
 
   <script>
-    async function getCameraStream(facingMode) {
-      try {
-        const constraints = {
-          video: {
-            facingMode: { exact: facingMode }
-          },
-          audio: false
-        };
-        return await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (e) {
-        console.warn('Fallback to default camera:', e);
-        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    document.addEventListener('touchmove', function(e) {
+      if (e.touches.length > 1) {
+        e.preventDefault();
       }
-    }
+    }, { passive: false });
 
-    const video = document.getElementById('video');
-    const overlay = document.getElementById('overlay');
-    const canvas = document.getElementById('canvas');
-    const shutterSound = document.getElementById('shutterSound');
-    const captureBtn = document.getElementById('captureBtn');
-    const switchCameraBtn = document.getElementById('switchCameraBtn');
-    const notice = document.getElementById('notice');
-    const templateSelector = document.getElementById('templateSelector');
-    const zoomSlider = document.getElementById('zoomSlider');
-    const zoomValue = document.getElementById('zoomValue');
+    let currentScale = 1;
+    let initialDistance = null;
 
-    let currentLowRes = templateSelector.value;
-    let currentHighRes = templateSelector.selectedOptions[0].dataset.highres;
-    let currentFacingMode = 'user';
-    let currentStream = null;
-
-    // 現在のズーム倍率（初期1）
-    let currentZoom = 1;
-
-    // スライダー操作でズーム変更
-    zoomSlider.addEventListener('input', () => {
-      currentZoom = parseFloat(zoomSlider.value);
-      video.style.transform = `scale(${currentZoom})`;
-      zoomValue.textContent = `${currentZoom.toFixed(1)}x`;
-    });
-
-    // 多言語切替
-    function setLanguage(lang) {
-      document.querySelectorAll('[data-ja]').forEach(el => {
-        if (el.dataset[lang]) {
-          el.innerHTML = el.dataset[lang];
-        }
-      });
-    }
-
-    async function startCamera() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-      }
-      try {
-        const stream = await getCameraStream(currentFacingMode);
-        currentStream = stream;
-        video.srcObject = stream;
-      } catch (err) {
-        alert('カメラにアクセスできませんでした。許可を確認してください。');
-        console.error(err);
-      }
-    }
-
-    switchCameraBtn.addEventListener('click', () => {
-      currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
-      startCamera();
-    });
-
-    templateSelector.addEventListener('change', e => {
-      const selectedOption = e.target.selectedOptions[0];
-      currentLowRes = selectedOption.value;
-      currentHighRes = selectedOption.dataset.highres;
-      overlay.src = currentLowRes + '?t=' + Date.now();
-    });
-
-    // ピンチ操作のズーム対応
-    let lastDistance = null;
     function getDistance(touches) {
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
-      return Math.sqrt(dx*dx + dy*dy);
+      return Math.sqrt(dx * dx + dy * dy);
     }
+
+    const video = document.getElementById('video');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
 
     video.addEventListener('touchstart', e => {
       if (e.touches.length === 2) {
-        lastDistance = getDistance(e.touches);
+        initialDistance = getDistance(e.touches);
       }
     });
 
     video.addEventListener('touchmove', e => {
-      if (e.touches.length === 2 && lastDistance !== null) {
+      if (e.touches.length === 2 && initialDistance) {
         const newDistance = getDistance(e.touches);
-        let scale = currentZoom;
-        const scaleChange = newDistance / lastDistance;
-        scale *= scaleChange;
-        // ズーム範囲を制限
-        scale = Math.min(Math.max(scale, parseFloat(zoomSlider.min)), parseFloat(zoomSlider.max));
-        currentZoom = scale;
-        zoomSlider.value = currentZoom.toFixed(2);
-        zoomValue.textContent = `${currentZoom.toFixed(2)}x`;
-        video.style.transform = `scale(${currentZoom})`;
-        lastDistance = newDistance;
-        e.preventDefault();
+        const delta = newDistance / initialDistance;
+        let newScale = Math.min(3, Math.max(1, currentScale * delta));
+        video.style.transform = `scale(${newScale})`;
+        zoomSlider.value = newScale;
+        zoomValue.textContent = `${parseFloat(newScale).toFixed(2)}x`;
       }
     });
 
     video.addEventListener('touchend', e => {
       if (e.touches.length < 2) {
-        lastDistance = null;
-      }
-    });
-
-    // 撮影時にズーム倍率を考慮して切り取り範囲を計算し描画
-    captureBtn.addEventListener('click', () => {
-      if (video.readyState < 2) {
-        alert('カメラがまだ準備中です。数秒待ってから、もう一度シャッターを押してください。');
-        return;
-      }
-      shutterSound.currentTime = 0;
-      shutterSound.play().catch(() => {});
-
-      const w = 3508, h = 2480;
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-
-      const vw = video.videoWidth || video.offsetWidth;
-      const vh = video.videoHeight || video.offsetHeight;
-
-      const zoom = currentZoom || 1;
-
-      // ズーム倍率を考慮し、中心を基準に動画の切り抜き範囲を計算
-      const sw = vw / zoom;
-      const sh = vh / zoom;
-      const sx = (vw - sw) / 2;
-      const sy = (vh - sh) / 2;
-
-      const aspectCanvas = w / h;
-      const aspectVideo = vw / vh;
-
-      let drawSx = sx, drawSy = sy, drawSw = sw, drawSh = sh;
-
-      // アスペクト比に合わせてトリミング調整
-      if (aspectVideo > aspectCanvas) {
-        drawSw = sh * aspectCanvas;
-        drawSx = sx + (sw - drawSw) / 2;
-        drawSh = sh;
-        drawSy = sy;
-      } else {
-        drawSh = sw / aspectCanvas;
-        drawSy = sy + (sh - drawSh) / 2;
-        drawSw = sw;
-        drawSx = sx;
-      }
-
-      ctx.drawImage(video, drawSx, drawSy, drawSw, drawSh, 0, 0, w, h);
-
-      // テンプレートの高解像度画像を合成
-      const highresImg = new Image();
-      highresImg.crossOrigin = "anonymous";
-      highresImg.onload = () => {
-        ctx.drawImage(highresImg, 0, 0, w, h);
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const previewWrapper = document.getElementById('previewWrapper');
-          const previewImg = document.getElementById('previewImage');
-          previewImg.onload = () => {
-            notice.scrollIntoView({ behavior: 'smooth' });
-          };
-          previewImg.src = '';
-          previewImg.src = url;
-          previewWrapper.style.display = 'block';
-          notice.style.display = 'block';
-          notice.innerHTML = `
-            iPhone：画像を👆長押しして「“写真”に保存」を選ぶ<br><br>
-            Android：画像を👆長押しして「画像を保存」で"ギャラリー"に保存します<br><br>
-            保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
-          `;
-        }, 'image/png');
-      };
-      highresImg.src = currentHighRes;
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-      startCamera();
-      const userLang = navigator.language.slice(0, 2);
-      const supportedLangs = ['ja', 'en', 'zh', 'ko', 'vi'];
-      if (supportedLangs.includes(userLang)) {
-        setLanguage(userLang);
+        currentScale = parseFloat(zoomSlider.value);
+        initialDistance = null;
       }
     });
   </script>
