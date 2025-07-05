@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Myうちわ</title>
   <style>
     body {
@@ -31,10 +31,10 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      touch-action: none;
     }
     video {
       transform-origin: center center;
+      touch-action: none;
     }
     canvas {
       display: none;
@@ -58,8 +58,13 @@
     }
     #notice {
       margin-top: 15px;
-      color: green;
-      font-weight: bold;
+      color: black;
+      font-weight: normal;
+    }
+
+    #notice a:not(.form-button) {
+      color: #0077cc;
+      text-decoration: underline;
     }
     .form-button {
       display: inline-block;
@@ -92,19 +97,28 @@
       position: absolute;
       cursor: grab;
     }
-    .fan-container, .fan-print {
+    .fan-container {
+      display: none;
+    }
+    .fan-print {
       display: none;
     }
     @media print {
-      .fan-screen { display: none !important; }
-      .fan-print { display: block !important; }
+      .fan-screen {
+        display: none !important;
+      }
+      .fan-print {
+        display: block !important;
+      }
     }
     #downloadNotice {
       font-size: 0.7em;
     }
+    /* フィルター（例）もしあればここに追記してください */
   </style>
 </head>
 <body>
+
   <div id="langButtons">
     <button onclick="setLanguage('ja')">日本語</button>
     <button onclick="setLanguage('en')">English</button>
@@ -113,21 +127,21 @@
     <button onclick="setLanguage('vi')">Tiếng Việt</button>
   </div>
 
-  <h1 id="title"
-    data-ja="作っちゃおう！Myうちわ"
-    data-en="Let's Make Our Own Fan!"
-    data-zh="一起来制作我们的团扇！"
-    data-ko="우리만의 부채를 만들어보자!"
-    data-vi="Hãy cùng làm quạt giấy của riêng mình!">
+  <h1 id="title" style="font-size: 14px;"
+      data-ja="作っちゃおう！Myうちわ"
+      data-en="Let's Make Our Own Fan!"
+      data-zh="一起来制作我们的团扇！"
+      data-ko="우리만의 부채를 만들어보자!"
+      data-vi="Hãy cùng làm quạt giấy của riêng mình!">
     作っちゃおう！Myうちわ
   </h1>
 
-  <label id="templateLabel"
-    data-ja="うちわのデザインを選んでね👉"
-    data-en="Choose a fan design👉"
-    data-zh="请选择一个团扇设计👉"
-    data-ko="부채 디자인을 선택하세요👉"
-    data-vi="Chọn thiết kế quạt:">
+  <label id="templateLabel" style="font-size: 14px;"
+         data-ja="うちわのデザインを選んでね👉"
+         data-en="Choose a fan design👉"
+         data-zh="请选择一个团扇设计👉"
+         data-ko="부채 디자인을 선택하세요👉"
+         data-vi="Chọn thiết kế quạt:">
     うちわのデザインを選んでね👉
   </label>
   <select id="templateSelector">
@@ -138,162 +152,198 @@
 
   <div id="videoWrapper">
     <video id="video" autoplay playsinline muted></video>
-    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="テンプレ画像">
+    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像" />
     <canvas id="canvas"></canvas>
-  </div>
-
-  <div id="pinchZoomNotice">
-    画面を <strong>2本の指</strong> でズーム（ピンチイン・ピンチアウト）できます
   </div>
 
   <div style="margin-top: 10px;">
     <label for="zoomSlider">🔍 ズーム：</label>
-    <input type="range" id="zoomSlider" min="1" max="3" step="0.01" value="1" style="width: 80%;">
-    <span id="zoomValue">1.00x</span>
+    <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" style="width: 80%;" />
+    <span id="zoomValue">1.0x</span>
   </div>
 
-  <button id="captureBtn"><img src="shutterbotann.png" alt="撮影"></button>
+  <button id="captureBtn">
+    <img src="shutterbotann.png" alt="シャッターボタン" />
+  </button>
+
   <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
 
+  <p id="downloadNotice" class="text-center text-sm mt-2 text-gray-600"></p>
+
   <div id="previewWrapper" style="display:none;">
-    <img id="previewImage" style="max-width:90%; margin-top:20px; border:1px solid #ccc; border-radius:10px;">
+    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;" />
   </div>
 
   <p id="notice" style="display: none;"></p>
 
-  <div id="formButtonWrapper" style="margin-top: 12px;">
+  <div id="formButtonWrapper" style="display: block; margin-top: 12px;">
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog"
-    target="_blank" class="form-button">📝 注文フォームへ進む</a>
+     target="_blank"
+     class="form-button">📝 注文フォームへ進む</a>
   </div>
 
   <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
+  <div class="fan-container"></div>
 
   <script>
+    async function getCameraStream(facingMode) {
+      try {
+        const constraints = {
+          video: {
+            facingMode: { exact: facingMode }
+          },
+          audio: false
+        };
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e) {
+        // fallback to any available camera
+        console.warn('Fallback to default camera:', e);
+        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+    }
+
     const video = document.getElementById('video');
     const overlay = document.getElementById('overlay');
     const canvas = document.getElementById('canvas');
+    const shutterSound = document.getElementById('shutterSound');
+    const captureBtn = document.getElementById('captureBtn');
+    const switchCameraBtn = document.getElementById('switchCameraBtn');
+    const notice = document.getElementById('notice');
+    const templateSelector = document.getElementById('templateSelector');
     const zoomSlider = document.getElementById('zoomSlider');
     const zoomValue = document.getElementById('zoomValue');
-    const shutterSound = document.getElementById('shutterSound');
-    const notice = document.getElementById('notice');
-    const previewImage = document.getElementById('previewImage');
-    const previewWrapper = document.getElementById('previewWrapper');
-    const templateSelector = document.getElementById('templateSelector');
 
+    let currentLowRes = templateSelector.value;
+    let currentHighRes = templateSelector.selectedOptions[0].dataset.highres;
+    let currentFacingMode = 'user';
     let currentStream = null;
-    let currentScale = 1;
-    let initialDistance = null;
-    let currentFacing = 'user';
+
+    // ズームスライダーの変化で動画の表示も拡大（見た目ズーム）
+    zoomSlider.addEventListener('input', () => {
+      const scale = zoomSlider.value;
+      video.style.transform = `scale(${scale})`;
+      zoomValue.textContent = `${parseFloat(scale).toFixed(1)}x`;
+    });
+
+    function setLanguage(lang) {
+      document.querySelectorAll('[data-ja]').forEach(el => {
+        if (el.dataset[lang]) {
+          el.innerHTML = el.dataset[lang];
+        }
+      });
+    }
 
     async function startCamera() {
-      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacing }, audio: false });
+        const stream = await getCameraStream(currentFacingMode);
         currentStream = stream;
         video.srcObject = stream;
       } catch (err) {
-        alert('カメラが見つかりませんでした。別のデバイスでお試しください。');
+        alert('カメラにアクセスできませんでした。許可を確認してください。');
         console.error(err);
       }
     }
 
-    document.getElementById('switchCameraBtn').addEventListener('click', () => {
-      currentFacing = currentFacing === 'user' ? 'environment' : 'user';
+    switchCameraBtn.addEventListener('click', () => {
+      currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
       startCamera();
     });
 
     templateSelector.addEventListener('change', e => {
-      const lowres = e.target.value;
-      overlay.src = lowres + '?t=' + Date.now();
+      const selectedOption = e.target.selectedOptions[0];
+      currentLowRes = selectedOption.value;
+      currentHighRes = selectedOption.dataset.highres;
+      overlay.src = currentLowRes + '?t=' + Date.now();
     });
 
-    zoomSlider.addEventListener('input', () => {
-      const scale = parseFloat(zoomSlider.value);
-      video.style.transform = `scale(${scale})`;
-      zoomValue.textContent = `${scale.toFixed(2)}x`;
-      currentScale = scale;
-    });
-
-    function getDistance(touches) {
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      return Math.sqrt(dx*dx + dy*dy);
-    }
-
-    video.addEventListener('touchstart', e => {
-      if (e.touches.length === 2) initialDistance = getDistance(e.touches);
-    });
-
-    video.addEventListener('touchmove', e => {
-      if (e.touches.length === 2 && initialDistance) {
-        e.preventDefault();
-        const newDist = getDistance(e.touches);
-        const delta = newDist / initialDistance;
-        const newScale = Math.min(3, Math.max(1, currentScale * delta));
-        video.style.transform = `scale(${newScale})`;
-        zoomSlider.value = newScale;
-        zoomValue.textContent = `${newScale.toFixed(2)}x`;
+    captureBtn.addEventListener('click', () => {
+      if (video.readyState < 2) {
+        alert('カメラがまだ準備中です。数秒待ってから、もう一度シャッターを押してください。');
+        return;
       }
-    }, { passive: false });
+      shutterSound.currentTime = 0;
+      shutterSound.play().catch(() => {});
 
-    video.addEventListener('touchend', () => {
-      currentScale = parseFloat(zoomSlider.value);
-      initialDistance = null;
-    });
-
-    document.getElementById('captureBtn').addEventListener('click', () => {
-      shutterSound.play();
       const w = 3508, h = 2480;
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
 
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-      const aspectV = vw / vh, aspectC = w / h;
-      let sx = 0, sy = 0, sw = vw, sh = vh;
+      const vw = video.videoWidth || video.offsetWidth;
+      const vh = video.videoHeight || video.offsetHeight;
+      const aspectVideo = vw / vh;
+      const aspectCanvas = w / h;
 
-      if (aspectV > aspectC) {
-        sw = vh * aspectC;
+      // ズーム倍率を取得
+      const zoom = parseFloat(zoomSlider.value);
+
+      // ズームを考慮して切り出しサイズ計算
+      let sw = vw / zoom;
+      let sh = vh / zoom;
+
+      // 中央を基準に切り出し開始位置計算
+      let sx = (vw - sw) / 2;
+      let sy = (vh - sh) / 2;
+
+      // アスペクト比を合わせる調整
+      if (aspectVideo > aspectCanvas) {
+        sw = sh * aspectCanvas;
         sx = (vw - sw) / 2;
       } else {
-        sh = vw / aspectC;
+        sh = sw / aspectCanvas;
         sy = (vh - sh) / 2;
       }
 
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
 
-      const highres = new Image();
-      highres.crossOrigin = "anonymous";
-      highres.onload = () => {
-        ctx.drawImage(highres, 0, 0, w, h);
+      // 高解像度画像の重ね描き（テンプレート）
+      const highresImg = new Image();
+      highresImg.crossOrigin = "anonymous";
+      highresImg.onload = () => {
+        ctx.drawImage(highresImg, 0, 0, w, h);
+
         canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
-          previewImage.src = url;
+          const previewWrapper = document.getElementById('previewWrapper');
+          const previewImg = document.getElementById('previewImage');
+
+          previewImg.onload = () => {
+            notice.scrollIntoView({ behavior: 'smooth' });
+          };
+
+          previewImg.src = '';
+          previewImg.src = url;
           previewWrapper.style.display = 'block';
+
           notice.style.display = 'block';
-          notice.innerHTML = `iPhone：画像を👆長押しして保存<br>Android：画像を👆長押しして保存`;
+          notice.style.color = 'green';
+          notice.innerHTML = `
+            iPhone：画像を👆長押しして「“写真”に保存」を選ぶ<br><br>
+            Android：画像を👆長押しして「画像を保存」で"ギャラリー"に保存します<br><br>
+            保存が終わったら、以下のボタンから申込フォームへお進みください。<br>
+          `;
         }, 'image/png');
       };
-      const selected = templateSelector.selectedOptions[0];
-      highres.src = selected.dataset.highres;
+      highresImg.src = currentHighRes;
     });
-
-    function setLanguage(lang) {
-      document.querySelectorAll('[data-ja]').forEach(el => {
-        if (el.dataset[lang]) el.innerHTML = el.dataset[lang];
-      });
-    }
 
     window.addEventListener('DOMContentLoaded', () => {
       startCamera();
-      const userLang = navigator.language.slice(0,2);
-      if (["ja","en","zh","ko","vi"].includes(userLang)) setLanguage(userLang);
+      const userLang = navigator.language.slice(0, 2);
+      const supportedLangs = ['ja', 'en', 'zh', 'ko', 'vi'];
+      if (supportedLangs.includes(userLang)) {
+        setLanguage(userLang);
+      }
     });
   </script>
 
-  <footer style="font-size: 10px; color: #888;">
-    © 2025 Chugoku Shimbun Hanbai Center. Web app developed by Hitomi Sasaki.
+  <footer style="font-size: 6px; color: #888;">
+    © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
+    このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br />
+    ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
   </footer>
 </body>
 </html>
