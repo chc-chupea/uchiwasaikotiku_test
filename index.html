@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Myうちわ</title>
   <style>
     body {
@@ -113,9 +113,11 @@
     #downloadNotice {
       font-size: 0.7em;
     }
+    /* フィルター（例）もしあればここに追記してください */
   </style>
 </head>
 <body>
+
   <div id="langButtons">
     <button onclick="setLanguage('ja')">日本語</button>
     <button onclick="setLanguage('en')">English</button>
@@ -149,32 +151,34 @@
 
   <div id="videoWrapper">
     <video id="video" autoplay playsinline muted></video>
-    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像">
+    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像" />
     <canvas id="canvas"></canvas>
   </div>
 
   <div style="margin-top: 10px;">
     <label for="zoomSlider">🔍 ズーム：</label>
-    <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" style="width: 80%;">
+    <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" style="width: 80%;" />
     <span id="zoomValue">1.0x</span>
   </div>
 
   <button id="captureBtn">
-    <img src="shutterbotann.png" alt="シャッターボタン">
+    <img src="shutterbotann.png" alt="シャッターボタン" />
   </button>
 
   <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
 
-  <p id="downloadNotice"></p>
+  <p id="downloadNotice" class="text-center text-sm mt-2 text-gray-600"></p>
 
   <div id="previewWrapper" style="display:none;">
-    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;">
+    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;" />
   </div>
 
   <p id="notice" style="display: none;"></p>
 
   <div id="formButtonWrapper" style="display: block; margin-top: 12px;">
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog" target="_blank" class="form-button">📝 注文フォームへ進む</a>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog"
+     target="_blank"
+     class="form-button">📝 注文フォームへ進む</a>
   </div>
 
   <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
@@ -184,13 +188,16 @@
     async function getCameraStream(facingMode) {
       try {
         const constraints = {
-          video: { facingMode },
+          video: {
+            facingMode: { exact: facingMode }
+          },
           audio: false
         };
         return await navigator.mediaDevices.getUserMedia(constraints);
       } catch (e) {
-        console.warn('カメラ取得に失敗しました:', e);
-        throw new Error('カメラが見つかりませんでした。別のデバイスでお試しください。');
+        // fallback to any available camera
+        console.warn('Fallback to default camera:', e);
+        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
     }
 
@@ -210,6 +217,7 @@
     let currentFacingMode = 'user';
     let currentStream = null;
 
+    // ズームスライダーの変化で動画の表示も拡大（見た目ズーム）
     zoomSlider.addEventListener('input', () => {
       const scale = zoomSlider.value;
       video.style.transform = `scale(${scale})`;
@@ -233,7 +241,7 @@
         currentStream = stream;
         video.srcObject = stream;
       } catch (err) {
-        alert(err.message);
+        alert('カメラにアクセスできませんでした。許可を確認してください。');
         console.error(err);
       }
     }
@@ -267,33 +275,50 @@
       const vh = video.videoHeight || video.offsetHeight;
       const aspectVideo = vw / vh;
       const aspectCanvas = w / h;
-      let sx = 0, sy = 0, sw = vw, sh = vh;
 
+      // ズーム倍率を取得
+      const zoom = parseFloat(zoomSlider.value);
+
+      // ズームを考慮して切り出しサイズ計算
+      let sw = vw / zoom;
+      let sh = vh / zoom;
+
+      // 中央を基準に切り出し開始位置計算
+      let sx = (vw - sw) / 2;
+      let sy = (vh - sh) / 2;
+
+      // アスペクト比を合わせる調整
       if (aspectVideo > aspectCanvas) {
-        sw = vh * aspectCanvas;
+        sw = sh * aspectCanvas;
         sx = (vw - sw) / 2;
       } else {
-        sh = vw / aspectCanvas;
+        sh = sw / aspectCanvas;
         sy = (vh - sh) / 2;
       }
 
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
 
+      // 高解像度画像の重ね描き（テンプレート）
       const highresImg = new Image();
       highresImg.crossOrigin = "anonymous";
       highresImg.onload = () => {
         ctx.drawImage(highresImg, 0, 0, w, h);
+
         canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
           const previewWrapper = document.getElementById('previewWrapper');
           const previewImg = document.getElementById('previewImage');
+
           previewImg.onload = () => {
             notice.scrollIntoView({ behavior: 'smooth' });
           };
+
           previewImg.src = '';
           previewImg.src = url;
           previewWrapper.style.display = 'block';
+
           notice.style.display = 'block';
+          notice.style.color = 'green';
           notice.innerHTML = `
             iPhone：画像を👆長押しして「“写真”に保存」を選ぶ<br><br>
             Android：画像を👆長押しして「画像を保存」で"ギャラリー"に保存します<br><br>
@@ -315,9 +340,9 @@
   </script>
 
   <footer style="font-size: 6px; color: #888;">
-  © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br>
-  このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br>
-  ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
+    © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
+    このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br />
+    ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
   </footer>
 </body>
 </html>
