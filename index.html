@@ -41,6 +41,7 @@
     }
     #captureBtn, #switchCameraBtn {
       margin-top: 15px;
+      margin-bottom: 10px;
       background: none;
       border: none;
       cursor: pointer;
@@ -132,15 +133,16 @@
 
     #zoomSection {
       margin-top: 20px;
+      margin-bottom: 10px;
       text-align: center;
     }
 
     #zoomSlider {
       width: 80%;
-      height: 12px; /* ← スライダーを太く！ */
+      height: 10px; /* ← スライダーを太く！ */
       appearance: none;
       background: #ddd;
-      border-radius: 10px;
+      border-radius: 8px;
       outline: none;
     }
 
@@ -204,13 +206,13 @@
     <canvas id="canvas"></canvas>
   </div>
 
+  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
+
   <div id="zoomSection">
   <label for="zoomSlider">🔍 カメラのズーム</label><br>
   <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" />
   <div id="zoomValue">1.0x</div>
   </div>
-
-  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
 
   <button id="captureBtn">
     <img src="shutterbotann.png" alt="シャッターボタン" />
