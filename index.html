@@ -226,8 +226,37 @@
 
   <p id="notice" style="display: none;"></p>
 
+
+  <div id="customizationTools" style="margin-top: 20px;">
+    <input type="text" id="customText" placeholder="推しへのメッセージを入力♡" style="font-size: 16px; padding: 5px; width: 80%; border-radius: 8px; border: 1px solid #ccc;" />
+    <button onclick="addTextToOverlay()" style="padding: 5px 10px; margin-left: 10px;">追加</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <label>スタンプを選んでね：</label>
+    <button onclick="addStamp('❤️')">❤️</button>
+    <button onclick="addStamp('⭐')">⭐</button>
+    <button onclick="addStamp('✨')">✨</button>
+    <button onclick="addStamp('🎶')">🎶</button>
+    <button onclick="addStamp('❌')">削除モード</button>
+  </div>
+
+
+<!-- スタンプやテキスト配置用レイヤー -->
+<div id="designLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+
+<!-- PNG保存＆フォーム遷移ボタン -->
+<div id="saveWrapper" style="margin-top: 20px; display: none;">
+  <button onclick="saveFinalImage()" class="form-button">📥 PNG保存</button>
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog" target="_blank" class="form-button">📝 注文フォームへ</a>
+</div>
+
+
+
+
+
   <div id="formButtonWrapper" style="display: block; margin-top: 10px;">
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdAf9ZuaIIWqMmxMPZzhmMs6zFWV_OyyI5OEUvqdCnIpnS-Xg/viewform?usp=dialog"
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
      target="_blank"
      class="form-button">📝 注文フォームへ進む</a>
   </div>
@@ -384,13 +413,109 @@
           notice.style.color = 'black';
           notice.innerHTML = `
             iPhone：画像を👆長押しして「“写真”に保存」を選ぶ<br><br>
-            Android：画像を👆長押しして「画像を保存」で"ギャラリー"に保存します<br><br>
+            Android：画像を👆長押しして「画像を保存」します<br><br>
             保存が終わったら、下のボタンから注文フォームへ<br>
           `;
         }, 'image/png');
       };
       highresImg.src = currentHighRes;
     });
+
+
+  let deleteMode = false;
+
+  function addTextToOverlay() {
+    const text = document.getElementById('customText').value;
+    if (!text.trim()) return;
+    const span = document.createElement('span');
+    span.textContent = text;
+    span.style.position = 'absolute';
+    span.style.left = '50%';
+    span.style.top = '50%';
+    span.style.transform = 'translate(-50%, -50%)';
+    span.style.fontSize = '24px';
+    span.style.fontWeight = 'bold';
+    span.style.color = 'hotpink';
+    span.style.cursor = 'move';
+    span.style.pointerEvents = 'auto';
+    makeDraggable(span);
+    document.getElementById('designLayer').appendChild(span);
+    document.getElementById('saveWrapper').style.display = 'block';
+  }
+
+  function addStamp(emoji) {
+    if (emoji === '❌') {
+      deleteMode = true;
+      return;
+    }
+    deleteMode = false;
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    span.style.position = 'absolute';
+    span.style.left = Math.random() * 80 + '%';
+    span.style.top = Math.random() * 60 + '%';
+    span.style.fontSize = '36px';
+    span.style.cursor = 'move';
+    span.style.pointerEvents = 'auto';
+    makeDraggable(span);
+    document.getElementById('designLayer').appendChild(span);
+    document.getElementById('saveWrapper').style.display = 'block';
+  }
+
+  function makeDraggable(el) {
+    let offsetX, offsetY;
+    el.addEventListener('mousedown', (e) => {
+      if (deleteMode) {
+        el.remove();
+        return;
+      }
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
+      function moveAt(pageX, pageY) {
+        el.style.left = (pageX - offsetX) + 'px';
+        el.style.top = (pageY - offsetY) + 'px';
+      }
+      function onMouseMove(e) {
+        moveAt(e.pageX, e.pageY);
+      }
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      }, { once: true });
+    });
+  }
+
+  function saveFinalImage() {
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = 3508;
+    finalCanvas.height = 2480;
+    const ctx = finalCanvas.getContext('2d');
+
+    // カメラ画像＋背景テンプレートの描画
+    ctx.drawImage(canvas, 0, 0);
+
+    // 配置済みスタンプ・テキストを反映
+    const designLayer = document.getElementById('designLayer');
+    const items = designLayer.querySelectorAll('span');
+    items.forEach(item => {
+      const rect = item.getBoundingClientRect();
+      const videoRect = video.getBoundingClientRect();
+      const x = (rect.left - videoRect.left) * (finalCanvas.width / videoRect.width);
+      const y = (rect.top - videoRect.top) * (finalCanvas.height / videoRect.height);
+      ctx.font = window.getComputedStyle(item).font;
+      ctx.fillStyle = window.getComputedStyle(item).color;
+      ctx.fillText(item.textContent, x, y);
+    });
+
+    finalCanvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'my_uchiwa.png';
+      link.click();
+    });
+  }
+
 
     window.addEventListener('DOMContentLoaded', () => {
       startCamera();
