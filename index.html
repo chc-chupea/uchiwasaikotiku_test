@@ -441,6 +441,32 @@
           previewImg.src = url;
           previewWrapper.style.display = 'block';
 
+          const captured = new Image();
+          captured.src = url;
+          captured.style.position = 'absolute';
+          captured.style.top = 0;
+          captured.style.left = 0;
+          captured.style.width = '100%';
+          captured.style.height = '100%';
+          captured.id = 'capturedPhoto';
+
+          const wrapper = document.getElementById('videoWrapper');
+          // 前の写真があれば消す
+          const old = document.getElementById('capturedPhoto');
+          if (old) old.remove();
+          wrapper.appendChild(captured);
+
+          // videoとoverlayは非表示にする
+          video.style.display = 'none';
+          overlay.style.display = 'none';
+
+  // ✅ ←そしてここから文字やスタンプが編集できる！
+        }, 'image/png');
+
+
+
+
+
           notice.style.display = 'block';
           notice.style.color = 'black';
           notice.innerHTML = `
@@ -626,6 +652,15 @@ function addStamp(emoji) {
   span.style.fontSize = '64px';
   makeDraggableResizable(span);
   document.getElementById('designLayer').appendChild(span);
+}
+
+function resetToCamera() {
+  const captured = document.getElementById('capturedPhoto');
+  if (captured) captured.remove();
+  video.style.display = 'block';
+  overlay.style.display = 'block';
+  document.getElementById('previewWrapper').style.display = 'none';
+  notice.style.display = 'none';
 }
 
 </script>
