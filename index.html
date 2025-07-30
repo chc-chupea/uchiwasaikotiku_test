@@ -2,13 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Myうちわ</title>
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Train+One&family=Cherry+Bomb+One&family=Kaisei+Tokumin&display=swap" rel="stylesheet">
-
+  <title>推し活うちわメーカー</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Train+One&family=Cherry+Bomb+One&family=Kaisei+Tokumin&family=RocknRoll+One&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: sans-serif;
@@ -34,46 +31,61 @@
       height: 100%;
       object-fit: cover;
     }
-    video {
+    canvas { display: none; }
+
+    #designLayer span, #designLayer img {
+      position: absolute;
+      pointer-events: auto;
+      cursor: move;
+      user-select: none;
       transform-origin: center center;
-      touch-action: none;
     }
-    canvas {
-      display: none;
+    #designLayer span.selected, #designLayer img.selected {
+      outline: 3px solid red;
+      box-shadow: 0 0 5px red;
+      z-index: 20;
     }
-    #captureBtn, #switchCameraBtn {
-      margin-top: 15px;
-      margin-bottom: 10px;
-      background: none;
-      border: none;
+
+    .resizer, .rotator, .deleter {
+      position: absolute;
+      z-index: 10;
+    }
+    .resizer {
+      width: 14px;
+      height: 14px;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      border: 2px solid #888;
+      cursor: nwse-resize;
+    }
+    .rotator {
+      width: 14px;
+      height: 14px;
+      left: -20px;
+      top: -20px;
+      background: #fff;
+      border: 2px solid #888;
+      border-radius: 50%;
+      cursor: grab;
+    }
+    .deleter {
+      top: -10px;
+      right: -10px;
+      background: #f66;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      line-height: 20px;
       cursor: pointer;
-
-      display: block;           /* ← ボタンをブロック要素にするよ！ */
-      margin-left: auto;        /* ← 左の空きを自動で調整 */
-      margin-right: auto;       /* ← 右の空きも自動で調整＝まんなかに！ */
-    }
-    #captureBtn img {
-      width: 60px;
-      height: auto;
-    }
-    #switchCameraBtn {
-      font-size: 16px;
-      padding: 8px 16px;
-      background-color: #eee;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    #notice {
-      margin-top: 15px;
-      color: black;
-      font-size: 12px; /* ←ここでサイズを指定 */
-      font-weight: normal;
     }
 
-    #notice a:not(.form-button) {
-      color: #0077cc;
-      text-decoration: underline;
-    }
+    input, select, button { font-size: 1rem; margin: 4px; padding: 6px; }
+    #previewWrapper, #finalWrapper { position: relative; }
+    #previewImage, #finalImage { max-width: 90%; border: 1px solid #ccc; border-radius: 8px; }
     .form-button {
       display: inline-block;
       background: linear-gradient(135deg, #2196f3, #1976d2);
@@ -85,590 +97,282 @@
       font-size: 18px;
       border-radius: 30px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
     }
-    .form-button:hover {
-      background: linear-gradient(135deg, #1976d2, #0d47a1);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 10px rgba(0,0,0,0.15);
-    }
-    #langButtons {
-      margin-top: 10px;
-    }
-    #langButtons button {
-      margin: 0 5px;
-      padding: 5px 10px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    #overlay {
-      position: absolute;
-      cursor: grab;
-    }
-    .fan-container {
-      display: none;
-    }
-    .fan-print {
-      display: none;
-    }
-    @media print {
-      .fan-screen {
-        display: none !important;
-      }
-      .fan-print {
-        display: block !important;
-      }
-    }
-    #downloadNotice {
-      font-size: 0.7em;
-    }
-
-    #templateSelector {
-      font-size: 18px;       /* 文字サイズ */
-      padding: 12px 20px;    /* 上下と左右の余白 → ボタンが大きく見える */
-      border-radius: 8px;    /* 角をちょっと丸くする */
-      border: 1px solid #888; /* 枠を少し目立たせる */
-      background-color: #fff; /* 白背景 */
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 少し立体感 */
-    }
-
-
-    #zoomSection {
-      margin-top: 20px;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    #zoomSlider {
-      width: 80%;
-      height: 10px; /* ← スライダーを太く！ */
-      appearance: none;
-      background: #ddd;
-      border-radius: 8px;
-      outline: none;
-    }
-
-    #zoomSlider::-webkit-slider-thumb {
-      appearance: none;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #2196f3;
-      cursor: pointer;
-      border: none;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-
-    #zoomValue {
-      display: inline-block;
-      margin-top: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
-    }
-    /* フィルター（例）もしあればここに追記してください */
-
-.resizer, .rotator {
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border: 2px solid #888;
-  position: absolute;
-  z-index: 10;
-}
-.resizer {
-  right: 0;
-  bottom: 0;
-  cursor: nwse-resize;
-}
-.rotator {
-  left: -20px;
-  top: -20px;
-  cursor: grab;
-  border-radius: 50%;
-}
-.deleter {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: #f66;
-  color: #fff;
-  border-radius: 50%;
-  font-size: 14px;
-  width: 20px;
-  height: 20px;
-  text-align: center;
-  line-height: 20px;
-  cursor: pointer;
-}
   </style>
 </head>
 <body>
 
-  <div id="langButtons">
-    <button onclick="setLanguage('ja')">日本語</button>
-    <button onclick="setLanguage('en')">English</button>
-    <button onclick="setLanguage('zh')">中文</button>
-    <button onclick="setLanguage('ko')">한국어</button>
-    <button onclick="setLanguage('vi')">Tiếng Việt</button>
-  </div>
+  <h1>推し活うちわメーカー</h1>
 
-  <h1 id="title" style="font-size: 14px;"
-      data-ja="作っちゃおう！Myうちわ"
-      data-en="Let's Make Our Own Fan!"
-      data-zh="一起来制作我们的团扇！"
-      data-ko="우리만의 부채를 만들어보자!"
-      data-vi="Hãy cùng làm quạt giấy của riêng mình!">
-    作っちゃおう！Myうちわ
-  </h1>
-
-  <label id="templateLabel" style="font-size: 18px;"
-         data-ja="うちわのデザインを選んでね👉"
-         data-en="Choose a fan design👉"
-         data-zh="请选择一个团扇设计👉"
-         data-ko="부채 디자인을 선택하세요👉"
-         data-vi="Chọn thiết kế quạt:">
-    うちわのデザインを選んでね👉
-  </label>
+  <!-- テンプレート選択 -->
+  <label>うちわのデザインを選んでね👉</label>
   <select id="templateSelector">
     <option value="fan1-lowres.png" data-highres="fan1-highres.png">無地</option>
     <option value="fan2-lowres.png" data-highres="fan2-highres.png">夏祭り①</option>
     <option value="fan3-lowres.png" data-highres="fan3-highres.png">夏祭り②</option>
   </select>
 
-
-
-  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
-
-  <div id="zoomSection">
-  <label for="zoomSlider">🔍 カメラのズーム</label><br>
-  <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" />
-  <div id="zoomValue">1.0x</div>
-  </div>
-
-  <button id="captureBtn">
-    <img src="shutterbotann.png" alt="シャッターボタン" />
-  </button>
-
-  <div style="margin-top: 10px">
-    <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
-    <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
-    <select id="fontPicker">
-      <option value="Arial" style="font-family: Arial">Arial</option>
-      <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16', sans-serif">ドットゴシック</option>
-      <option value="'Train One', cursive" style="font-family: 'Train One', cursive">Train One</option>
-      <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One', cursive">手書き風</option>
-      <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin', serif">丸文字</option>
-  </select>
-    <button onclick="addTextToOverlay()">追加</button>
-  </div>
-
-  <div style="margin-top:10px">
-    <label>スタンプ：</label>
-    <button onclick="addStamp('❤️')">❤️</button>
-    <button onclick="addStamp('⭐')">⭐</button>
-    <button onclick="addStamp('🎶')">🎶</button>
-  </div>
-
-
+  <!-- カメラ -->
   <div id="videoWrapper">
     <video id="video" autoplay playsinline muted></video>
     <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像" />
     <canvas id="canvas"></canvas>
-    <div id="designLayer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
   </div>
+  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
+  <button id="captureBtn">📸 シャッター</button>
 
-
-  <p id="downloadNotice" class="text-center text-sm mt-2 text-gray-600"></p>
-
+  <!-- 撮影後プレビュー -->
   <div id="previewWrapper" style="display:none;">
-    <img id="previewImage" style="max-width: 90%; margin-top: 20px; border: 1px solid #ccc; border-radius: 10px;" />
+    <img id="previewImage" />
+    <div id="designLayer" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
   </div>
 
-  <p id="notice" style="display: none;"></p>
-
-  <div id="formButtonWrapper" style="display: block; margin-top: 10px;">
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
-     target="_blank"
-     class="form-button">📝 注文フォームへ進む</a>
+  <!-- デコレーションツール -->
+  <div id="editTools" style="display:none; margin-top:10px;">
+    <div>
+      <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+      <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
+      <select id="fontPicker">
+        <option value="Arial" style="font-family: Arial">Arial</option>
+        <option value="'DotGothic16', sans-serif">ドットゴシック</option>
+        <option value="'Train One', cursive">Train One</option>
+        <option value="'Cherry Bomb One', cursive">手書き風</option>
+        <option value="'Kaisei Tokumin', serif">丸文字</option>
+        <option value="'RocknRoll One', sans-serif">ロックンロール</option>
+        <option value="'Mochiy Pop One', sans-serif">もちポップ</option>
+      </select>
+      <button onclick="addTextToOverlay()">テキスト追加</button>
+    </div>
+    <div>
+      <label>スタンプ：</label>
+      <button onclick="addStamp('❤️')">❤️</button>
+      <button onclick="addStamp('⭐')">⭐</button>
+      <button onclick="addStamp('🎶')">🎶</button>
+      <button onclick="document.getElementById('stampFile').click()">📷 画像スタンプを追加</button>
+      <input type="file" id="stampFile" accept="image/*" style="display:none;" multiple>
+    </div>
+    <button id="finishBtn" style="margin-top:10px;">🎨 完成！</button>
   </div>
 
-  <audio id="shutterSound" src="camera-shutter.mp3" preload="auto"></audio>
-  <div class="fan-container"></div>
+  <!-- 完成画像 -->
+  <div id="finalWrapper" style="display:none; margin-top:20px;">
+    <p>📱 完成画像を長押しで保存できます</p>
+    <img id="finalImage" />
+  </div>
+
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
+     target="_blank" class="form-button" id="formButton" style="display:none;">📝 注文フォームへ進む</a>
 
   <script>
-    async function getCameraStream(facingMode) {
-      try {
-        const constraints = {
-          video: {
-            facingMode: { exact: facingMode }
-            
-          },
-          audio: false
-        };
-        return await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (e) {
-        // fallback to any available camera
-        console.warn('Fallback to default camera:', e);
-        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      }
-    }
-
     const video = document.getElementById('video');
-    const overlay = document.getElementById('overlay');
-    // ←追加ここから！
-    video.addEventListener('click', () => {
-      const track = currentStream?.getVideoTracks?.()[0];
-      if (track?.applyConstraints) {
-        track.applyConstraints({
-          advanced: [{ focusMode: "continuous" }]
-        }).catch(e => console.log("フォーカス変更できなかった：", e));
-      }
-    });
-    // ←追加ここまで！
-
     const canvas = document.getElementById('canvas');
-    const shutterSound = document.getElementById('shutterSound');
-    const captureBtn = document.getElementById('captureBtn');
-    const switchCameraBtn = document.getElementById('switchCameraBtn');
-    const notice = document.getElementById('notice');
+    const overlay = document.getElementById('overlay');
     const templateSelector = document.getElementById('templateSelector');
-    const zoomSlider = document.getElementById('zoomSlider');
-    const zoomValue = document.getElementById('zoomValue');
-
-    let currentLowRes = templateSelector.value;
-    let currentHighRes = templateSelector.selectedOptions[0].dataset.highres;
     let currentFacingMode = 'user';
     let currentStream = null;
 
-    // ズームスライダーの変化で動画の表示も拡大（見た目ズーム）
-    zoomSlider.addEventListener('input', () => {
-      const scale = zoomSlider.value;
-      video.style.transform = `scale(${scale})`;
-      zoomValue.textContent = `${parseFloat(scale).toFixed(1)}x`;
-    });
-
-    function setLanguage(lang) {
-      document.querySelectorAll('[data-ja]').forEach(el => {
-        if (el.dataset[lang]) {
-          el.innerHTML = el.dataset[lang];
-        }
-      });
-    }
-
+    // カメラ起動
     async function startCamera() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-      }
+      if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
-        const stream = await getCameraStream(currentFacingMode);
-        currentStream = stream;
-        video.srcObject = stream;
-      } catch (err) {
-        alert('カメラにアクセスできませんでした。許可を確認してください。');
-        console.error(err);
-      }
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: currentFacingMode }, audio: false
+        });
+        video.srcObject = currentStream;
+      } catch (err) { alert('カメラにアクセスできません'); }
     }
-
-    switchCameraBtn.addEventListener('click', () => {
+    startCamera();
+    document.getElementById('switchCameraBtn').onclick = () => {
       currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
       startCamera();
-    });
+    };
 
+    // テンプレート切り替え
     templateSelector.addEventListener('change', e => {
-      const selectedOption = e.target.selectedOptions[0];
-      currentLowRes = selectedOption.value;
-      currentHighRes = selectedOption.dataset.highres;
-      overlay.src = currentLowRes + '?t=' + Date.now();
+      overlay.src = e.target.value;
     });
 
-    captureBtn.addEventListener('click', () => {
-      if (video.readyState < 2) {
-        alert('カメラがまだ準備中です。数秒待ってから、もう一度シャッターを押してください。');
-        return;
-      }
-      shutterSound.currentTime = 0;
-      shutterSound.play().catch(() => {});
-
+    // シャッター
+    document.getElementById('captureBtn').addEventListener('click', () => {
       const w = 3508, h = 2480;
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
 
-      const vw = video.videoWidth || video.offsetWidth;
-      const vh = video.videoHeight || video.offsetHeight;
-      const aspectVideo = vw / vh;
-      const aspectCanvas = w / h;
-
-      // ズーム倍率を取得
-      const zoom = parseFloat(zoomSlider.value);
-
-      // ズームを考慮して切り出しサイズ計算
-      let sw = vw / zoom;
-      let sh = vh / zoom;
-
-      // 中央を基準に切り出し開始位置計算
-      let sx = (vw - sw) / 2;
-      let sy = (vh - sh) / 2;
-
-      // アスペクト比を合わせる調整
-      if (aspectVideo > aspectCanvas) {
-        sw = sh * aspectCanvas;
-        sx = (vw - sw) / 2;
-      } else {
-        sh = sw / aspectCanvas;
-        sy = (vh - sh) / 2;
-      }
-
-      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
-
-      // 高解像度画像の重ね描き（テンプレート）
-      const highresImg = new Image();
-      highresImg.crossOrigin = "anonymous";
-      highresImg.onload = () => {
-        ctx.drawImage(highresImg, 0, 0, w, h);
-
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const previewWrapper = document.getElementById('previewWrapper');
-          const previewImg = document.getElementById('previewImage');
-
-          previewImg.onload = () => {
-            notice.scrollIntoView({ behavior: 'smooth' });
-          };
-
-          previewImg.src = '';
-          previewImg.src = url;
-          previewWrapper.style.display = 'block';
-
-          const captured = new Image();
-          captured.src = url;
-          captured.style.position = 'absolute';
-          captured.style.top = 0;
-          captured.style.left = 0;
-          captured.style.width = '100%';
-          captured.style.height = '100%';
-          captured.id = 'capturedPhoto';
-
-          const wrapper = document.getElementById('videoWrapper');
-          // 前の写真があれば消す
-          const old = document.getElementById('capturedPhoto');
-          if (old) old.remove();
-          wrapper.appendChild(captured);
-
-          // videoとoverlayは非表示にする
-          video.style.display = 'none';
-          overlay.style.display = 'none';
-
-  // ✅ ←そしてここから文字やスタンプが編集できる！
-        }, 'image/png');
-
-
-
-
-
-          notice.style.display = 'block';
-          notice.style.color = 'black';
-          notice.innerHTML = `
-            iPhone：画像を👆長押しして「“写真”に保存」を選ぶ<br><br>
-            Android：画像を👆長押しして「画像を保存」します<br><br>
-            保存が終わったら、下のボタンから注文フォームへ<br>
-          `;
-        }, 'image/png');
+      const highres = new Image();
+      highres.onload = () => {
+        ctx.drawImage(highres, 0, 0, w, h);
+        document.getElementById('previewImage').src = canvas.toDataURL('image/png');
+        document.getElementById('previewWrapper').style.display = 'block';
+        document.getElementById('editTools').style.display = 'block';
       };
-      highresImg.src = currentHighRes;
+      highres.src = templateSelector.selectedOptions[0].dataset.highres;
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
-      startCamera();
-      const userLang = navigator.language.slice(0, 2);
-      const supportedLangs = ['ja', 'en', 'zh', 'ko', 'vi'];
-      if (supportedLangs.includes(userLang)) {
-        setLanguage(userLang);
+    // デコレーション機能
+    const designLayer = document.getElementById('designLayer');
+    let selectedItem = null;
+
+    function makeDraggableResizable(el) {
+      const resizer = document.createElement('div');
+      resizer.className = 'resizer';
+      el.appendChild(resizer);
+      const rotator = document.createElement('div');
+      rotator.className = 'rotator';
+      el.appendChild(rotator);
+      const del = document.createElement('div');
+      del.className = 'deleter';
+      del.textContent = '✖';
+      el.appendChild(del);
+      del.onclick = () => el.remove();
+
+      el.addEventListener('click', e => { e.stopPropagation(); selectItem(el); });
+
+      let offsetX, offsetY, isDragging = false;
+      el.addEventListener('mousedown', e => {
+        if ([resizer, rotator, del].includes(e.target)) return;
+        isDragging = true;
+        offsetX = e.offsetX; offsetY = e.offsetY;
+        function onMove(ev) {
+          el.style.left = (ev.pageX - designLayer.offsetLeft - offsetX) + 'px';
+          el.style.top = (ev.pageY - designLayer.offsetTop - offsetY) + 'px';
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', () => {
+          isDragging = false;
+          document.removeEventListener('mousemove', onMove);
+        }, { once: true });
+      });
+
+      resizer.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
+        function onResizeMove(ev) {
+          const dx = ev.clientX - startX;
+          if (el.tagName === 'SPAN') el.style.fontSize = (startSize + dx * 0.5) + 'px';
+          else el.style.transform = `scale(${1 + dx / 100})`;
+        }
+        document.addEventListener('mousemove', onResizeMove);
+        document.addEventListener('mouseup', () => {
+          document.removeEventListener('mousemove', onResizeMove);
+        }, { once: true });
+      });
+
+      rotator.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        function onRotateMove(ev) {
+          const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
+          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        }
+        document.addEventListener('mousemove', onRotateMove);
+        document.addEventListener('mouseup', () => {
+          document.removeEventListener('mousemove', onRotateMove);
+        }, { once: true });
+      });
+    }
+
+    function selectItem(el) {
+      if (selectedItem) selectedItem.classList.remove('selected');
+      selectedItem = el;
+      selectedItem.classList.add('selected');
+      if (el.tagName === 'SPAN') {
+        document.getElementById('colorPicker').value = rgbToHex(window.getComputedStyle(el).color);
       }
+    }
+
+    function rgbToHex(rgb) {
+      const res = rgb.match(/\d+/g);
+      return "#" + res.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+    }
+
+    function addTextToOverlay() {
+      const text = document.getElementById('customText').value;
+      if (!text.trim()) return;
+      const color = document.getElementById('colorPicker').value;
+      const font = document.getElementById('fontPicker').value;
+      const span = document.createElement('span');
+      span.textContent = text;
+      span.style.left = '50%';
+      span.style.top = '50%';
+      span.style.transform = 'translate(-50%, -50%)';
+      span.style.fontSize = '60px';
+      span.style.fontWeight = 'bold';
+      span.style.color = color;
+      span.style.fontFamily = font;
+      makeDraggableResizable(span);
+      designLayer.appendChild(span);
+      selectItem(span);
+    }
+
+    function addStamp(emoji) {
+      const span = document.createElement('span');
+      span.textContent = emoji;
+      span.style.left = '50%';
+      span.style.top = '50%';
+      span.style.fontSize = '80px';
+      span.style.transform = 'translate(-50%, -50%)';
+      makeDraggableResizable(span);
+      designLayer.appendChild(span);
+    }
+
+    document.getElementById('stampFile').addEventListener('change', e => {
+      [...e.target.files].forEach(file => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.left = '50%';
+        img.style.top = '50%';
+        img.style.maxWidth = '30%';
+        img.style.transform = 'translate(-50%, -50%)';
+        makeDraggableResizable(img);
+        designLayer.appendChild(img);
+      });
     });
 
-let deleteMode = false;
-let selectedItem = null;
+    // 完成ボタン
+    document.getElementById('finishBtn').addEventListener('click', () => {
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width = 3508;
+      finalCanvas.height = 2480;
+      const ctx = finalCanvas.getContext('2d');
+      const img = document.getElementById('previewImage');
+      ctx.drawImage(img, 0, 0, finalCanvas.width, finalCanvas.height);
 
-function makeDraggableResizable(el) {
-  let offsetX, offsetY;
-  let isDragging = false;
-  let rotation = 0;
+      const items = designLayer.querySelectorAll('span, img');
+      const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
+      items.forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const scaleX = finalCanvas.width / previewRect.width;
+        const scaleY = finalCanvas.height / previewRect.height;
+        const x = (rect.left - previewRect.left + rect.width / 2) * scaleX;
+        const y = (rect.top - previewRect.top + rect.height / 2) * scaleY;
+        ctx.save();
+        ctx.translate(x, y);
+        const style = window.getComputedStyle(item);
+        const angleMatch = style.transform.match(/rotate\(([-0-9.]+)deg\)/);
+        const angle = angleMatch ? parseFloat(angleMatch[1]) : 0;
+        ctx.rotate(angle * Math.PI / 180);
+        if (item.tagName === 'SPAN') {
+          ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scaleX}px ${style.fontFamily}`;
+          ctx.fillStyle = style.color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(item.textContent, 0, 0);
+        } else if (item.tagName === 'IMG') {
+          ctx.drawImage(item, -item.width/2 * scaleX, -item.height/2 * scaleY,
+                        item.width * scaleX, item.height * scaleY);
+        }
+        ctx.restore();
+      });
 
-  const resizer = document.createElement('div');
-  resizer.className = 'resizer';
-  el.appendChild(resizer);
-
-  const rotator = document.createElement('div');
-  rotator.className = 'rotator';
-  el.appendChild(rotator);
-
-  const delBtn = document.createElement('div');
-  delBtn.className = 'deleter';
-  delBtn.textContent = '✖';
-  el.appendChild(delBtn);
-  delBtn.onclick = () => {
-    if (selectedItem === el) selectedItem = null;
-    el.remove();
-  };
-
-  el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    selectItem(el);
-  });
-
-  el.addEventListener('mousedown', (e) => {
-    if ([resizer, delBtn, rotator].includes(e.target)) return;
-    if (deleteMode) {
-      el.remove();
-      return;
-    }
-    isDragging = true;
-    offsetX = e.offsetX;
-    offsetY = e.offsetY;
-    function onMouseMove(e) {
-      if (!isDragging) return;
-      el.style.left = `${e.pageX - offsetX}px`;
-      el.style.top = `${e.pageY - offsetY}px`;
-    }
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-      document.removeEventListener('mousemove', onMouseMove);
-    }, { once: true });
-  });
-
-  resizer.addEventListener('mousedown', function(e) {
-    e.stopPropagation();
-    const startX = e.clientX;
-    const startFontSize = parseFloat(window.getComputedStyle(el).fontSize);
-    function onResizeMove(e) {
-      const dx = e.clientX - startX;
-      const newSize = Math.max(10, startFontSize + dx * 0.5);
-      el.style.fontSize = newSize + 'px';
-    }
-    document.addEventListener('mousemove', onResizeMove);
-    document.addEventListener('mouseup', () => {
-      document.removeEventListener('mousemove', onResizeMove);
-    }, { once: true });
-  });
-
-  rotator.addEventListener('mousedown', function(e) {
-    e.stopPropagation();
-    const rect = el.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    function onRotateMove(e) {
-      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      rotation = angle * 180 / Math.PI;
-      el.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-    }
-    document.addEventListener('mousemove', onRotateMove);
-    document.addEventListener('mouseup', () => {
-      document.removeEventListener('mousemove', onRotateMove);
-    }, { once: true });
-  });
-}
-
-function selectItem(el) {
-  if (selectedItem) selectedItem.classList.remove('selected');
-  selectedItem = el;
-  selectedItem.classList.add('selected');
-
-  const style = window.getComputedStyle(el);
-  const colorInput = document.getElementById('colorPicker');
-  const fontInput = document.getElementById('fontPicker');
-  const hex = rgbToHex(style.color);
-  if (hex) colorInput.value = hex;
-  const fontList = style.fontFamily.split(',');
-  fontInput.value = fontList[0].replace(/['"]/g, '').trim();
-}
-
-function rgbToHex(rgb) {
-  const result = rgb.match(/\d+(\.\d+)?/g);
-  if (!result || result.length < 3) return "#000000";
-  return "#" + result.slice(0, 3).map(n => Math.round(n).toString(16).padStart(2, '0')).join('');
-}
-
-document.addEventListener('click', (e) => {
-  const id = e.target.id;
-  const isControl = ['customText', 'colorPicker', 'fontPicker'].includes(id);
-  if (!document.getElementById('designLayer').contains(e.target) && !isControl) {
-    if (selectedItem) selectedItem.classList.remove('selected');
-    selectedItem = null;
-  }
-});
-
-document.getElementById('colorPicker').addEventListener('input', e => {
-  if (selectedItem) {
-    selectedItem.style.color = e.target.value;
-  } else {
-    alert('変更する要素を選択してください');
-  }
-});
-
-document.getElementById('fontPicker').addEventListener('input', e => {
-  if (selectedItem) {
-    selectedItem.style.fontFamily = e.target.value;
-  } else {
-    alert('変更する要素を選択してください');
-  }
-});
-
-
-function addTextToOverlay() {
-  const text = document.getElementById('customText').value;
-  const color = document.getElementById('colorPicker').value;
-  const font = document.getElementById('fontPicker').value;
-  if (!text.trim()) return;
-
-  const span = document.createElement('span');
-  span.textContent = text;
-  span.style.position = 'absolute';
-  span.style.left = '50%';
-  span.style.top = '50%';
-  span.style.transform = 'translate(-50%, -50%)';
-  span.style.fontSize = '48px';
-  span.style.fontWeight = 'bold';
-  span.style.color = color;
-  span.style.fontFamily = font;
-  makeDraggableResizable(span);
-  document.getElementById('designLayer').appendChild(span);
-  selectItem(span);
-}
-
-function addStamp(emoji) {
-  if (emoji === '❌') {
-    deleteMode = true;
-    return;
-  }
-  deleteMode = false;
-  const span = document.createElement('span');
-  span.textContent = emoji;
-  span.style.position = 'absolute';
-  span.style.left = Math.random() * 80 + '%';
-  span.style.top = Math.random() * 60 + '%';
-  span.style.fontSize = '64px';
-  makeDraggableResizable(span);
-  document.getElementById('designLayer').appendChild(span);
-}
-
-function resetToCamera() {
-  const captured = document.getElementById('capturedPhoto');
-  if (captured) captured.remove();
-  video.style.display = 'block';
-  overlay.style.display = 'block';
-  document.getElementById('previewWrapper').style.display = 'none';
-  notice.style.display = 'none';
-}
-
-</script>
-
-  <footer style="font-size: 6px; color: #888;">
-    © 2025 Chugoku Shimbun Hanbai Center. Web application developed by Hitomi Sasaki. All rights reserved.<br />
-    このウェブアプリケーションは、株式会社中国新聞販売センターの従業員による地域イベント向けの自主開発プロジェクトです。<br />
-    ※本アプリは公式サービスではありませんが、業務との親和性を考慮して使用されています。
-  </footer>
+      document.getElementById('finalImage').src = finalCanvas.toDataURL('image/png');
+      document.getElementById('finalWrapper').style.display = 'block';
+      document.getElementById('formButton').style.display = 'inline-block';
+    });
+  </script>
 </body>
 </html>
