@@ -197,13 +197,13 @@
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
       <div style="display: flex; align-items: center; gap: 10px;">
         <select id="fontPicker">
-          <option value="Arial" data-font="Arial" style="font-family: Arial;">Arial（標準）</option>
-          <option value="DotGothic16" data-font="'DotGothic16', sans-serif" style="font-family: 'DotGothic16';">ドットゴシック16</option>
-          <option value="Train One" data-font="'Train One', cursive" style="font-family: 'Train One';">Train One</option>
-          <option value="Cherry Bomb One" data-font="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One';">Cherry Bomb One</option>
-          <option value="Kaisei Tokumin" data-font="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin';">楷書体</option>
-          <option value="RocknRoll One" data-font="'RocknRoll One', sans-serif" style="font-family: 'RocknRoll One';">RocknRoll One</option>
-          <option value="Mochiy Pop One" data-font="'Mochiy Pop One', sans-serif" style="font-family: 'Mochiy Pop One';">もちポップ</option>
+          <option value="Arial" style="font-family: Arial;">Arial（標準）</option>
+          <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16';">ドットゴシック16</option>
+          <option value="'Train One', cursive" style="font-family: 'Train One';">Train One</option>
+          <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One';">Cherry Bomb One</option>
+          <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin';">楷書体</option>
+          <option value="'RocknRoll One', sans-serif" style="font-family: 'RocknRoll One';">RocknRoll One</option>
+          <option value="'Mochiy Pop One', sans-serif" style="font-family: 'Mochiy Pop One';">もちポップ</option>
        </select>
        <div id="fontPreview" style="font-size: 24px; font-weight: bold;">あA1</div>
      </div>
@@ -345,26 +345,6 @@
         }, { once: true });
       });
 
-      el.addEventListener('touchstart', e => {
-        if (e.target.classList.contains('resizer') || e.target.classList.contains('rotator') || e.target.classList.contains('deleter')) return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = el.getBoundingClientRect();
-        const offsetX = touch.clientX - rect.left;
-        const offsetY = touch.clientY - rect.top;
-
-        function onTouchMove(ev) {
-          const moveTouch = ev.touches[0];
-          el.style.left = (moveTouch.clientX - designLayer.offsetLeft - offsetX) + 'px';
-          el.style.top = (moveTouch.clientY - designLayer.offsetTop - offsetY) + 'px';
-        }
-
-        document.addEventListener('touchmove', onTouchMove);
-        document.addEventListener('touchend', () => {
-          document.removeEventListener('touchmove', onTouchMove);
-        }, { once: true });
-      }, { passive: false });
-
       resizer.addEventListener('mousedown', e => {
         e.stopPropagation();
         const startX = e.clientX;
@@ -380,75 +360,21 @@
         }, { once: true });
       });
 
-      // 🌟 タッチ操作（サイズ変更）
-      resizer.addEventListener('touchstart', e => {
-        e.stopPropagation();
-        const startX = e.touches[0].clientX;
-        const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
-
-        function onResizeTouchMove(ev) {
-          const dx = ev.touches[0].clientX - startX;
-          if (el.tagName === 'SPAN') el.style.fontSize = (startSize + dx * 0.5) + 'px';
-          else el.style.transform = `scale(${1 + dx / 100})`;
-        }
-
-        document.addEventListener('touchmove', onResizeTouchMove);
-        document.addEventListener('touchend', () => {
-          document.removeEventListener('touchmove', onResizeTouchMove);
-        }, { once: true });
-      }, { passive: false });
-
       rotator.addEventListener('mousedown', e => {
         e.stopPropagation();
         const rect = el.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-
-        const startTransform = el.style.transform || '';
-        const existingScale = startTransform.match(/scale\(([^)]+)\)/);
-        const scale = existingScale ? existingScale[1] : '1';
-
         function onRotateMove(ev) {
           const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
-          const deg = angle * 180 / Math.PI;
-          el.dataset.rotation = deg;
-          el.style.transform = `translate(-50%, -50%) rotate(${deg}deg) scale(${scale})`;
+          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
         }
-
         document.addEventListener('mousemove', onRotateMove);
         document.addEventListener('mouseup', () => {
           document.removeEventListener('mousemove', onRotateMove);
         }, { once: true });
       });
     }
-      
-      
-      // 🌟 タッチ操作（回転）
-      rotator.addEventListener('touchstart', e => {
-        e.stopPropagation();
-        const rect = el.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        const startTransform = el.style.transform || '';
-        const existingScale = startTransform.match(/scale\(([^)]+)\)/);
-        const scale = existingScale ? existingScale[1] : '1';
-
-        function onRotateTouchMove(ev) {
-          const moveTouch = ev.touches[0];
-          const angle = Math.atan2(moveTouch.clientY - centerY, moveTouch.clientX - centerX);
-          const deg = angle * 180 / Math.PI;
-          el.dataset.rotation = deg; // 保存
-          el.style.transform = `translate(-50%, -50%) rotate(${deg}deg) scale(${scale})`;
-        }
-
-        document.addEventListener('touchmove', onRotateTouchMove);
-        document.addEventListener('touchend', () => {
-          document.removeEventListener('touchmove', onRotateTouchMove);
-        }, { once: true });
-      }, { passive: false });
-
-
 
     function selectItem(el) {
       if (selectedItem) selectedItem.classList.remove('selected');
@@ -470,7 +396,7 @@
     });
 
     document.getElementById('fontPicker').addEventListener('input', e => {
-      const font = e.target.selectedOptions[0].dataset.font;  // ← 修正点！
+      const font = e.target.value;
       const preview = document.getElementById('fontPreview');
       preview.style.fontFamily = font;
       if (selectedItem) selectedItem.style.fontFamily = font;
@@ -525,58 +451,47 @@
       finalCanvas.height = 2480;
       const ctx = finalCanvas.getContext('2d');
       const img = document.getElementById('previewImage');
+      ctx.drawImage(img, 0, 0, finalCanvas.width, finalCanvas.height);
 
-      // ✅ 安定して描画するために onload を使う
-      const loadedImage = new Image();
-      loadedImage.onload = () => {
-        ctx.drawImage(loadedImage, 0, 0, finalCanvas.width, finalCanvas.height);
+      const items = Array.from(designLayer.children).filter(el =>
+        el.tagName === 'SPAN' || el.tagName === 'IMG'
+      );
 
-        // 🎨 デザインレイヤーを描画
-        const items = Array.from(designLayer.children).filter(el =>
-          el.tagName === 'SPAN' || el.tagName === 'IMG'
-        );
+      const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
+      items.forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const scaleX = finalCanvas.width / previewRect.width;
+        const scaleY = finalCanvas.height / previewRect.height;
+        const x = (rect.left - previewRect.left + rect.width / 2) * scaleX;
+        const y = (rect.top - previewRect.top + rect.height / 2) * scaleY;
+        ctx.save();
+        ctx.translate(x, y);
+        const style = window.getComputedStyle(item);
+        const angleMatch = style.transform.match(/rotate\(([-0-9.]+)deg\)/);
+        const angle = angleMatch ? parseFloat(angleMatch[1]) : 0;
+        ctx.rotate(angle * Math.PI / 180);
+        if (item.tagName === 'SPAN') {
+          ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scaleX}px ${style.fontFamily}`;
+          ctx.fillStyle = style.color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(item.textContent, 0, 0);
+        } else if (item.tagName === 'IMG') {
+          ctx.drawImage(item, -item.width/2 * scaleX, -item.height/2 * scaleY,
+                        item.width * scaleX, item.height * scaleY);
+        }
+        ctx.restore();
+      });
 
-        const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
-        items.forEach(item => {
-          const rect = item.getBoundingClientRect();
-          const scaleX = finalCanvas.width / previewRect.width;
-          const scaleY = finalCanvas.height / previewRect.height;
-          const x = (rect.left - previewRect.left + rect.width / 2) * scaleX;
-          const y = (rect.top - previewRect.top + rect.height / 2) * scaleY;
-          ctx.save();
-          ctx.translate(x, y);
-
-          const style = window.getComputedStyle(item);
-          const angleMatch = style.transform.match(/rotate\(([-0-9.]+)deg\)/);
-          const angle = angleMatch && angleMatch[1] ? parseFloat(angleMatch[1]) : 0;
-          ctx.rotate(angle * Math.PI / 180);
-
-          if (item.tagName === 'SPAN') {
-            ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scaleX}px ${style.fontFamily}`;
-            ctx.fillStyle = style.color;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(item.textContent, 0, 0);
-          } else if (item.tagName === 'IMG') {
-            ctx.drawImage(item, -item.width/2 * scaleX, -item.height/2 * scaleY,
-                          item.width * scaleX, item.height * scaleY);
-          }
-          ctx.restore();
-        });
-
-        document.getElementById('finalImage').src = finalCanvas.toDataURL('image/png');
-        document.getElementById('finalWrapper').style.display = 'block';
-        document.getElementById('formButton').style.display = 'inline-block';
-      };
-
-      loadedImage.src = img.src; // ← ここで画像を読み込み開始
+      document.getElementById('finalImage').src = finalCanvas.toDataURL('image/png');
+      document.getElementById('finalWrapper').style.display = 'block';
+      document.getElementById('formButton').style.display = 'inline-block';
     });
 
 
     // ページ読み込み時にフォントプレビューを初期化
     window.addEventListener('DOMContentLoaded', () => {
-      const select = document.getElementById('fontPicker');
-      const font = select.selectedOptions[0].dataset.font;
+      const font = document.getElementById('fontPicker').value;
       document.getElementById('fontPreview').style.fontFamily = font;
     });
   </script>
