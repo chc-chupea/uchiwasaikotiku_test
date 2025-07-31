@@ -345,6 +345,26 @@
         }, { once: true });
       });
 
+      el.addEventListener('touchstart', e => {
+        if (e.target.classList.contains('resizer') || e.target.classList.contains('rotator') || e.target.classList.contains('deleter')) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = el.getBoundingClientRect();
+        const offsetX = touch.clientX - rect.left;
+        const offsetY = touch.clientY - rect.top;
+
+        function onTouchMove(ev) {
+          const moveTouch = ev.touches[0];
+          el.style.left = (moveTouch.clientX - designLayer.offsetLeft - offsetX) + 'px';
+          el.style.top = (moveTouch.clientY - designLayer.offsetTop - offsetY) + 'px';
+        }
+
+        document.addEventListener('touchmove', onTouchMove);
+        document.addEventListener('touchend', () => {
+          document.removeEventListener('touchmove', onTouchMove);
+        }, { once: true });
+      }, { passive: false });
+
       resizer.addEventListener('mousedown', e => {
         e.stopPropagation();
         const startX = e.clientX;
@@ -359,6 +379,24 @@
           document.removeEventListener('mousemove', onResizeMove);
         }, { once: true });
       });
+
+      // 🌟 タッチ操作（サイズ変更）
+      resizer.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        const startX = e.touches[0].clientX;
+        const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
+
+        function onResizeTouchMove(ev) {
+          const dx = ev.touches[0].clientX - startX;
+          if (el.tagName === 'SPAN') el.style.fontSize = (startSize + dx * 0.5) + 'px';
+          else el.style.transform = `scale(${1 + dx / 100})`;
+        }
+
+        document.addEventListener('touchmove', onResizeTouchMove);
+        document.addEventListener('touchend', () => {
+          document.removeEventListener('touchmove', onResizeTouchMove);
+        }, { once: true });
+      }, { passive: false });
 
       rotator.addEventListener('mousedown', e => {
         e.stopPropagation();
@@ -375,6 +413,28 @@
         }, { once: true });
       });
     }
+      
+      
+      // 🌟 タッチ操作（回転）
+      rotator.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        function onRotateTouchMove(ev) {
+          const moveTouch = ev.touches[0];
+          const angle = Math.atan2(moveTouch.clientY - centerY, moveTouch.clientX - centerX);
+          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        }
+
+        document.addEventListener('touchmove', onRotateTouchMove);
+        document.addEventListener('touchend', () => {
+          document.removeEventListener('touchmove', onRotateTouchMove);
+        }, { once: true });
+      }, { passive: false });
+
+
 
     function selectItem(el) {
       if (selectedItem) selectedItem.classList.remove('selected');
