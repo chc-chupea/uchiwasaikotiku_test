@@ -6,24 +6,161 @@
   <title>推し活うちわメーカー</title>
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Train+One&family=Cherry+Bomb+One&family=Kaisei+Tokumin&family=RocknRoll+One&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; text-align: center; background-color: #f9f9f9; margin: 0; padding: 10px; }
-    #videoWrapper { position: relative; width: 100%; max-width: 900px; aspect-ratio: 4 / 3; margin: 0 auto; background-color: black; overflow: hidden; }
-    video, img.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: center center; }
-    canvas { display: none; }
-    #designLayer span, #designLayer img { position: absolute; pointer-events: auto; cursor: move; user-select: none; transform-origin: center center; }
-    #designLayer span.selected, #designLayer img.selected { outline: 3px solid red; box-shadow: 0 0 5px red; z-index: 20; }
-    .resizer, .rotator, .deleter { position: absolute; z-index: 10; }
-    .resizer { width: 14px; height: 14px; right: 0; bottom: 0; background: #fff; border: 2px solid #888; cursor: nwse-resize; }
-    .rotator { width: 14px; height: 14px; left: -20px; top: -20px; background: #fff; border: 2px solid #888; border-radius: 50%; cursor: grab; }
-    .deleter { top: -10px; right: -10px; background: #f66; color: #fff; border-radius: 50%; font-size: 14px; width: 20px; height: 20px; text-align: center; line-height: 20px; cursor: pointer; }
-    input, select, button { font-size: 1rem; margin: 4px; padding: 6px; }
-    #previewWrapper, #finalWrapper { position: relative; }
-    #previewImage, #finalImage { max-width: 90%; border: 1px solid #ccc; border-radius: 8px; }
-    .form-button { display: inline-block; background: linear-gradient(135deg, #2196f3, #1976d2); color: white; padding: 12px 24px; margin-top: 20px; text-decoration: none; font-weight: bold; font-size: 18px; border-radius: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    #zoomSection { margin-top: 10px; }
-    #zoomSlider { width: 80%; height: 10px; appearance: none; background: #ddd; border-radius: 8px; outline: none; }
-    #zoomSlider::-webkit-slider-thumb { appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #2196f3; cursor: pointer; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    #zoomValue { margin-top: 5px; font-size: 16px; font-weight: bold; color: #333; }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 10px;
+    }
+
+    #videoWrapper {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 4 / 3;
+      margin: 0 auto;
+      background-color: black;
+      overflow: hidden;
+    }
+
+    video,
+    img.overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform-origin: center center;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    #designLayer span,
+    #designLayer img {
+      position: absolute;
+      pointer-events: auto;
+      cursor: move;
+      user-select: none;
+      transform-origin: center center;
+      z-index: 5;
+    }
+
+    #designLayer span.selected,
+    #designLayer img.selected {
+      outline: 3px solid red;
+      box-shadow: 0 0 5px red;
+      z-index: 20;
+     }
+
+    .resizer,
+    .rotator,
+    .deleter {
+      position: absolute;
+      z-index: 10;
+    }
+
+    .resizer {
+      width: 14px;
+      height: 14px;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      border: 2px solid #888;
+      cursor: nwse-resize;
+    }
+
+    .rotator {
+      width: 14px;
+      height: 14px;
+      left: -20px;
+      top: -20px;
+      background: #fff;
+      border: 2px solid #888;
+      border-radius: 50%;
+      cursor: grab;
+    }
+
+    .deleter {
+      top: -10px;
+      right: -10px;
+      background: #f66;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      line-height: 20px;
+      cursor: pointer;
+    }
+
+    input,
+    select,
+    button {
+      font-size: 1rem;
+      margin: 4px;
+      padding: 6px;
+    }
+
+    #previewWrapper,
+    #finalWrapper {
+      position: relative;
+    }
+
+    #previewImage,
+    #finalImage {
+      max-width: 90%;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .form-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #2196f3, #1976d2);
+      color: white;
+      padding: 12px 24px;
+      margin-top: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #zoomSection {
+      margin-top: 10px;
+    }
+
+    #zoomSlider {
+      width: 80%;
+      height: 10px;
+      appearance: none;
+      background: #ddd;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    #zoomSlider::-webkit-slider-thumb {
+      appearance: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #2196f3;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    #zoomValue {
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -49,10 +186,10 @@
   </div>
   <button id="captureBtn">📸 シャッター</button>
 
-  <div id="previewWrapper" style="display:none;">
-    <img id="previewImage" />
-    <div id="designLayer" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
-  </div>
+  <div id="previewWrapper" style="display:none; position: relative;">
+  <img id="previewImage" />
+  <div id="designLayer" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+</div>
 
   <div id="editTools" style="display:none; margin-top:10px;">
     <div>
@@ -68,7 +205,7 @@
           <option value="'RocknRoll One', sans-serif" style="font-family: 'RocknRoll One';">RocknRoll One</option>
           <option value="'Mochiy Pop One', sans-serif" style="font-family: 'Mochiy Pop One';">もちポップ</option>
        </select>
-       <div id="fontPreview" style="font-size: 24px; font-weight: bold;">あいうABC123</div>
+       <div id="fontPreview" style="font-size: 24px; font-weight: bold;">あA1</div>
      </div>
       <button onclick="addTextToOverlay()">テキスト追加</button>
     </div>
@@ -316,7 +453,10 @@
       const img = document.getElementById('previewImage');
       ctx.drawImage(img, 0, 0, finalCanvas.width, finalCanvas.height);
 
-      const items = designLayer.querySelectorAll('span, img');
+      const items = Array.from(designLayer.children).filter(el =>
+        el.tagName === 'SPAN' || el.tagName === 'IMG'
+      );
+
       const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
       items.forEach(item => {
         const rect = item.getBoundingClientRect();
