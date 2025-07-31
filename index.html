@@ -85,7 +85,7 @@
     }
 
     .deleter {
-      top: -30px;
+      top: -10px;
       right: -10px;
       background: #f66;
       color: #fff;
@@ -405,29 +405,20 @@
     function addTextToOverlay() {
       const text = document.getElementById('customText').value;
       if (!text.trim()) return;
-
       const color = document.getElementById('colorPicker').value;
       const font = document.getElementById('fontPicker').value;
-
-      const wrapper = document.createElement('div');
-      wrapper.className = 'item-wrapper';
-      wrapper.style.position = 'absolute';
-      wrapper.style.left = '50%';
-      wrapper.style.top = '50%';
-      wrapper.style.transform = 'translate(-50%, -50%)';
-
       const span = document.createElement('span');
       span.textContent = text;
+      span.style.left = '50%';
+      span.style.top = '50%';
+      span.style.transform = 'translate(-50%, -50%)';
       span.style.fontSize = '60px';
       span.style.fontWeight = 'bold';
       span.style.color = color;
       span.style.fontFamily = font;
-      span.style.display = 'inline-block';
-
-      wrapper.appendChild(span);
-      makeDraggableResizable(wrapper);
-      designLayer.appendChild(wrapper);
-      selectItem(wrapper);
+      makeDraggableResizable(span);
+      designLayer.appendChild(span);
+      selectItem(span);
     }
 
     function addStamp(emoji) {
