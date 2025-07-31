@@ -58,15 +58,18 @@
     <div>
       <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
       <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
-      <select id="fontPicker">
-        <option value="Arial" style="font-family: Arial">Arial</option>
-        <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16'">ドットゴシック</option>
-        <option value="'Train One', cursive" style="font-family: 'Train One'">Train One</option>
-        <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One'">手書き風</option>
-        <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin'">丸文字</option>
-        <option value="'RocknRoll One', sans-serif" style="font-family: 'RocknRoll One'">ロックンロール</option>
-        <option value="'Mochiy Pop One', sans-serif" style="font-family: 'Mochiy Pop One'">もちポップ</option>
-      </select>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <select id="fontPicker">
+          <option value="Arial" style="font-family: Arial;">Arial（標準）</option>
+          <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16';">ドットゴシック16</option>
+          <option value="'Train One', cursive" style="font-family: 'Train One';">Train One</option>
+          <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One';">Cherry Bomb One</option>
+          <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin';">楷書体</option>
+          <option value="'RocknRoll One', sans-serif" style="font-family: 'RocknRoll One';">RocknRoll One</option>
+          <option value="'Mochiy Pop One', sans-serif" style="font-family: 'Mochiy Pop One';">もちポップ</option>
+       </select>
+       <div id="fontPreview" style="font-size: 24px; font-weight: bold;">あいうABC123</div>
+     </div>
       <button onclick="addTextToOverlay()">テキスト追加</button>
     </div>
     <div>
@@ -256,7 +259,10 @@
     });
 
     document.getElementById('fontPicker').addEventListener('input', e => {
-      if (selectedItem) selectedItem.style.fontFamily = e.target.value;
+      const font = e.target.value;
+      const preview = document.getElementById('fontPreview');
+      preview.style.fontFamily = font;
+      if (selectedItem) selectedItem.style.fontFamily = font;
     });
 
     function addTextToOverlay() {
@@ -340,6 +346,13 @@
       document.getElementById('finalImage').src = finalCanvas.toDataURL('image/png');
       document.getElementById('finalWrapper').style.display = 'block';
       document.getElementById('formButton').style.display = 'inline-block';
+    });
+
+
+    // ページ読み込み時にフォントプレビューを初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      const font = document.getElementById('fontPicker').value;
+      document.getElementById('fontPreview').style.fontFamily = font;
     });
   </script>
 
