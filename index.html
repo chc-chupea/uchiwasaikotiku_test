@@ -403,10 +403,18 @@
         const rect = el.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
+
+        const startTransform = el.style.transform || '';
+        const existingScale = startTransform.match(/scale\(([^)]+)\)/);
+        const scale = existingScale ? existingScale[1] : '1';
+
         function onRotateMove(ev) {
           const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
-          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+          const deg = angle * 180 / Math.PI;
+          el.dataset.rotation = deg;
+          el.style.transform = `translate(-50%, -50%) rotate(${deg}deg) scale(${scale})`;
         }
+
         document.addEventListener('mousemove', onRotateMove);
         document.addEventListener('mouseup', () => {
           document.removeEventListener('mousemove', onRotateMove);
@@ -422,10 +430,16 @@
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
 
+        const startTransform = el.style.transform || '';
+        const existingScale = startTransform.match(/scale\(([^)]+)\)/);
+        const scale = existingScale ? existingScale[1] : '1';
+
         function onRotateTouchMove(ev) {
           const moveTouch = ev.touches[0];
           const angle = Math.atan2(moveTouch.clientY - centerY, moveTouch.clientX - centerX);
-          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+          const deg = angle * 180 / Math.PI;
+          el.dataset.rotation = deg; // 保存
+          el.style.transform = `translate(-50%, -50%) rotate(${deg}deg) scale(${scale})`;
         }
 
         document.addEventListener('touchmove', onRotateTouchMove);
