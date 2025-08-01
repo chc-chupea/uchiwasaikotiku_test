@@ -381,14 +381,16 @@
         e.stopPropagation();
         const startX = e.clientX;
         const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
+  
         function onResizeMove(ev) {
           const dx = ev.clientX - startX;
-          if (el.tagName === 'SPAN') el.style.fontSize = (startSize + dx * 0.5) + 'px';
-            else el.style.transform = `scale(${1 + dx / 100})`;
+          if (el.tagName === 'SPAN') {
+            el.style.fontSize = (startSize + dx * 0.5) + 'px';
           } else {
             el.style.transform = `scale(${1 + dx / 100})`;
           }
         }
+
         document.addEventListener('mousemove', onResizeMove);
         document.addEventListener('mouseup', () => {
           document.removeEventListener('mousemove', onResizeMove);
