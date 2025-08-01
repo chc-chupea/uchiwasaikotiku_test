@@ -415,6 +415,7 @@
       const font = document.getElementById('fontPicker').value;
       const span = document.createElement('span');
       span.textContent = text;
+      span.setAttribute("data-text", text); // ← ここ追加！
       span.style.left = '50%';
       span.style.top = '50%';
       span.style.transform = 'translate(-50%, -50%)';
