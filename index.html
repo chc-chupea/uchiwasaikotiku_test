@@ -384,13 +384,43 @@
         function onResizeMove(ev) {
           const dx = ev.clientX - startX;
           if (el.tagName === 'SPAN') el.style.fontSize = (startSize + dx * 0.5) + 'px';
-          else el.style.transform = `scale(${1 + dx / 100})`;
+            else el.style.transform = `scale(${1 + dx / 100})`;
+          } else {
+            el.style.transform = `scale(${1 + dx / 100})`;
+          }
         }
         document.addEventListener('mousemove', onResizeMove);
         document.addEventListener('mouseup', () => {
           document.removeEventListener('mousemove', onResizeMove);
         }, { once: true });
       });
+      
+      // 📱 スマホ用（タッチ対応）
+      resizer.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        e.preventDefault(); // スクロール防止
+        const startX = e.touches[0].clientX;
+        const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
+
+        function onResizeMove(ev) {
+          const moveX = ev.touches[0].clientX;
+          const dx = moveX - startX;
+          if (el.tagName === 'SPAN') {
+            el.style.fontSize = (startSize + dx * 0.5) + 'px';
+          } else {
+            el.style.transform = `scale(${1 + dx / 100})`;
+          }
+        }
+
+      function onResizeEnd() {
+          document.removeEventListener('touchmove', onResizeMove);
+          document.removeEventListener('touchend', onResizeEnd);
+        }
+
+        document.addEventListener('touchmove', onResizeMove, { passive: false });
+        document.addEventListener('touchend', onResizeEnd);
+      }, { passive: false });
+
 
       rotator.addEventListener('mousedown', e => {
         e.stopPropagation();
