@@ -246,9 +246,15 @@
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: currentFacingMode },
+          video: {
+            facingMode: currentFacingMode,
+            width: { min: 1280, ideal: 1920, max: 2560 },
+            height: { min: 720, ideal: 1080, max: 1440 }
+          },
           audio: false
         });
+
+
         video.srcObject = currentStream;
       } catch (err) {
         alert('カメラにアクセスできません');
@@ -456,6 +462,29 @@
       const items = Array.from(designLayer.children).filter(el =>
         el.tagName === 'SPAN' || el.tagName === 'IMG'
       );
+
+      // ✖削除ボタンなどを一時非表示に
+      items.forEach(el => {
+        [...el.querySelectorAll('.resizer, .rotator, .deleter')].forEach(child => {
+          child.style.display = 'none';
+        });
+      });
+
+      // canvas描画処理ここに入る（あなたの元の描画コード）
+
+      // 描画が終わったら元に戻す
+      items.forEach(el => {
+        [...el.querySelectorAll('.resizer, .rotator, .deleter')].forEach(child => {
+          child.style.display = '';
+        });
+      });
+
+      // canvas初期化（任意）
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+
+      ctx.drawImage(document.getElementById('previewImage'), 0, 0, finalCanvas.width, finalCanvas.height);
 
       const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
       items.forEach(item => {
