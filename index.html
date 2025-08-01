@@ -501,11 +501,12 @@
         const angle = angleMatch ? parseFloat(angleMatch[1]) : 0;
         ctx.rotate(angle * Math.PI / 180);
         if (item.tagName === 'SPAN') {
+          const originalText = item.getAttribute('data-text') || item.textContent;
           ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scaleX}px ${style.fontFamily}`;
           ctx.fillStyle = style.color;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(item.textContent, 0, 0);
+          ctx.fillText(originalText, 0, 0); // ← 修正された描画！
         } else if (item.tagName === 'IMG') {
           ctx.drawImage(item, -item.width/2 * scaleX, -item.height/2 * scaleY,
                         item.width * scaleX, item.height * scaleY);
