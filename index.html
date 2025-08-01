@@ -440,6 +440,28 @@
       });
     }
 
+      rotator.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        function onTouchRotate(ev) {
+          const touch = ev.touches[0];
+          const angle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX);
+          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        }
+
+        function onTouchRotateEnd() {
+          document.removeEventListener('touchmove', onTouchRotate);
+          document.removeEventListener('touchend', onTouchRotateEnd);
+        }
+
+        document.addEventListener('touchmove', onTouchRotate, { passive: false });
+        document.addEventListener('touchend', onTouchRotateEnd);
+      }, { passive: false });
+
     function selectItem(el) {
       if (selectedItem) selectedItem.classList.remove('selected');
       selectedItem = el;
