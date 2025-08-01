@@ -351,6 +351,32 @@
         }, { once: true });
       });
 
+      // 📱 スマホ用（touch）
+      el.addEventListener('touchstart', e => {
+        if ([resizer, rotator, del].includes(e.target)) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = el.getBoundingClientRect();
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
+
+        function onTouchMove(ev) {
+          const moveTouch = ev.touches[0];
+          el.style.left = (moveTouch.clientX - designLayer.offsetLeft - offsetX) + 'px';
+          el.style.top = (moveTouch.clientY - designLayer.offsetTop - offsetY) + 'px';
+        }
+
+        function onTouchEnd() {
+          document.removeEventListener('touchmove', onTouchMove);
+          document.removeEventListener('touchend', onTouchEnd);
+        }
+
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+      }, { passive: false });
+
+
+
       resizer.addEventListener('mousedown', e => {
         e.stopPropagation();
         const startX = e.clientX;
