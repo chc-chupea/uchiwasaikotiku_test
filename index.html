@@ -431,6 +431,7 @@
     function addStamp(emoji) {
       const span = document.createElement('span');
       span.textContent = emoji;
+      span.setAttribute("data-text", emoji); // ← これを追加！
       span.style.left = '50%';
       span.style.top = '50%';
       span.style.fontSize = '80px';
