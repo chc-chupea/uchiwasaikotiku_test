@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>推し活うちわメーカー</title>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Train+One&family=Cherry+Bomb+One&family=Kaisei+Tokumin&family=RocknRoll+One&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: sans-serif;
@@ -17,13 +18,14 @@
       position: relative;
       width: 100%;
       max-width: 900px;
-      aspect-ratio: 4/3;
+      aspect-ratio: 4 / 3;
       margin: 0 auto;
-      background: black;
+      background-color: black;
       overflow: hidden;
     }
 
-    video, img.bgImage, img.overlay {
+    video,
+    img.overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -33,13 +35,15 @@
       transform-origin: center center;
     }
 
-    #designLayer {
-      position:absolute;
-      top:0; left:0;
-      width:100%; height:100%;
-      background: rgba(255,255,255,0);
-      pointer-events: auto;
+    canvas {
+      display: none;
     }
+
+      /* ← このへんに追加がおすすめ */
+      #designLayer {
+        background-color: rgba(255, 255, 255, 0); /* 完全透明でもタップOK */
+        pointer-events: auto;
+      }
 
     #designLayer span,
     #designLayer img {
@@ -51,20 +55,69 @@
       z-index: 5;
     }
 
-    #previewWrapper { position: relative; display:none; }
+    #designLayer span.selected,
+    #designLayer img.selected {
+      outline: 3px solid red;
+      box-shadow: 0 0 5px red;
+      z-index: 20;
+     }
 
-    #previewImage {
-      max-width: 90%;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    .resizer,
+    .rotator,
+    .deleter {
+      position: absolute;
+      z-index: 10;
     }
 
-    input, select, button {
+    .resizer {
+      width: 14px;
+      height: 14px;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      border: 2px solid #888;
+      cursor: nwse-resize;
+    }
+
+    .rotator {
+      width: 14px;
+      height: 14px;
+      left: -20px;
+      top: -20px;
+      background: #fff;
+      border: 2px solid #888;
+      border-radius: 50%;
+      cursor: grab;
+    }
+
+    .deleter {
+      top: -10px;
+      right: -10px;
+      background: #f66;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      line-height: 20px;
+      cursor: pointer;
+    }
+
+    input,
+    select,
+    button {
       font-size: 1rem;
       margin: 4px;
       padding: 6px;
     }
 
+    #previewWrapper,
+    #finalWrapper {
+      position: relative;
+    }
+
+    #previewImage,
     #finalImage {
       max-width: 90%;
       border: 1px solid #ccc;
@@ -81,82 +134,140 @@
       font-weight: bold;
       font-size: 18px;
       border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
+
+    #zoomSection {
+      margin-top: 10px;
+    }
+
+    #zoomSlider {
+      width: 80%;
+      height: 10px;
+      appearance: none;
+      background: #ddd;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    #zoomSlider::-webkit-slider-thumb {
+      appearance: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #2196f3;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    #zoomValue {
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
+
   </style>
 </head>
 <body>
   <h1>推し活うちわメーカー</h1>
 
-  <label>うちわテンプレート選択</label>
+  <label>うちわのデザインを選んでね👉</label>
   <select id="templateSelector">
-    <option value="fan1-lowres.png" data-highres="fan1-highres.png">無地</option>
-    <option value="fan2-lowres.png" data-highres="fan2-highres.png">夏祭り①</option>
-    <option value="fan3-lowres.png" data-highres="fan3-highres.png">夏祭り②</option>
+    <option value="fan1-lowres.png" data-highres="fan1-highres.png" style="font-family: Arial;">無地</option>
+    <option value="fan2-lowres.png" data-highres="fan2-highres.png" style="font-family: 'Train One';">夏祭り①</option>
+    <option value="fan3-lowres.png" data-highres="fan3-highres.png" style="font-family: 'Cherry Bomb One';">夏祭り②</option>
   </select>
 
   <div id="videoWrapper">
     <video id="video" autoplay playsinline muted></video>
-    <img id="bgImage" class="bgImage" style="display:none;">
-    <img id="overlay" class="overlay" src="fan1-lowres.png">
-    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="overlay" class="overlay" src="fan1-lowres.png" alt="うちわテンプレ画像" />
+    <canvas id="canvas"></canvas>
   </div>
+  <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
+  <div id="zoomSection">
+    <label for="zoomSlider">🔍 カメラのズーム</label><br>
+    <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1" />
+    <div id="zoomValue">1.0x</div>
+  </div>
+  <button id="captureBtn">📸 シャッター</button>
 
-  <div style="margin-top:8px;">
-    <button id="switchCameraBtn">📷 切替（自撮り／外向き）</button>
-    <button id="captureBtn">📸 シャッター</button>
-    <input type="file" id="bgFile" accept="image/*" style="display:none;">
-    <button onclick="document.getElementById('bgFile').click()">📂 画像選択</button>
-  </div>
-
-  <div id="previewWrapper">
-    <img id="previewImage">
-    <div id="designLayer"></div>
-  </div>
+  <div id="previewWrapper" style="display:none; position: relative;">
+  <img id="previewImage" />
+  <div id="designLayer" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+</div>
 
   <div id="editTools" style="display:none; margin-top:10px;">
-    <input type="text" id="customText" placeholder="推しへのメッセージ♡">
-    <input type="color" id="colorPicker" value="#ff69b4">
-    <button onclick="addTextToOverlay()">テキスト追加</button>
-    <button onclick="addStamp('❤️')">❤️</button>
-    <button onclick="addStamp('⭐')">⭐</button>
-    <button onclick="addStamp('🎶')">🎶</button>
-    <button onclick="document.getElementById('stampFile').click()">📷 画像スタンプを追加</button>
-    <input type="file" id="stampFile" accept="image/*" style="display:none;" multiple>
-    <div><button id="finishBtn">🎨 完成！</button></div>
+    <div>
+      <input type="text" id="customText" placeholder="推しへのメッセージ♡" />
+      <input type="color" id="colorPicker" value="#ff69b4" title="文字色選択" />
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <select id="fontPicker">
+          <option value="Arial" style="font-family: Arial;">Arial（標準）</option>
+          <option value="'DotGothic16', sans-serif" style="font-family: 'DotGothic16';">ドットゴシック16</option>
+          <option value="'Train One', cursive" style="font-family: 'Train One';">Train One</option>
+          <option value="'Cherry Bomb One', cursive" style="font-family: 'Cherry Bomb One';">Cherry Bomb One</option>
+          <option value="'Kaisei Tokumin', serif" style="font-family: 'Kaisei Tokumin';">楷書体</option>
+          <option value="'RocknRoll One', sans-serif" style="font-family: 'RocknRoll One';">RocknRoll One</option>
+          <option value="'Mochiy Pop One', sans-serif" style="font-family: 'Mochiy Pop One';">もちポップ</option>
+       </select>
+       <div id="fontPreview" style="font-size: 24px; font-weight: bold;">あA1</div>
+     </div>
+      <button onclick="addTextToOverlay()">テキスト追加</button>
+    </div>
+    <div>
+      <label>スタンプ：</label>
+      <button onclick="addStamp('❤️')">❤️</button>
+      <button onclick="addStamp('⭐')">⭐</button>
+      <button onclick="addStamp('🎶')">🎶</button>
+      <button onclick="document.getElementById('stampFile').click()">📷 画像スタンプを追加</button>
+      <input type="file" id="stampFile" accept="image/*" style="display:none;" multiple>
+    </div>
+    <button id="finishBtn" style="margin-top:10px;">🎨 完成！</button>
   </div>
 
   <div id="finalWrapper" style="display:none; margin-top:20px;">
-    <p>📱 完成画像を長押しで保存</p>
-    <img id="finalImage">
+    <p>📱 完成画像を長押しで保存できます</p>
+    <img id="finalImage" />
   </div>
+
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1wV724Vnag4FCcjeU1z-3vaCcfhCjAvGyU8432bu8dyciow/viewform?usp=dialog"
+     target="_blank" class="form-button" id="formButton" style="display:none;">📝 注文フォームへ進む</a>
 
   <script>
     const video = document.getElementById('video');
-    const bgImage = document.getElementById('bgImage');
     const canvas = document.getElementById('canvas');
-    const templateSelector = document.getElementById('templateSelector');
     const overlay = document.getElementById('overlay');
-    const designLayer = document.getElementById('designLayer');
+    const templateSelector = document.getElementById('templateSelector');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
+
     let currentFacingMode = 'user';
     let currentStream = null;
+    let selectedItem = null;
 
-    let bgPosX = 0, bgPosY = 0, bgScale = 1, bgRot = 0;
-    let startDist = 0, startAngle = 0, startScale = 1, startRot = 0;
-    let startX = 0, startY = 0;
+    const designLayer = document.getElementById('designLayer');
 
-    // カメラ起動
     async function startCamera() {
-      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+      if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: currentFacingMode },
+          video: {
+            facingMode: currentFacingMode,
+            width: { min: 1280, ideal: 1920, max: 2560 },
+            height: { min: 720, ideal: 1080, max: 1440 }
+          },
           audio: false
         });
+
+
         video.srcObject = currentStream;
-        video.style.display = 'block';
-        bgImage.style.display = 'none';
-      } catch(err) { alert('カメラにアクセスできません'); }
+      } catch (err) {
+        alert('カメラにアクセスできません');
+      }
     }
+
     startCamera();
 
     document.getElementById('switchCameraBtn').onclick = () => {
@@ -164,96 +275,43 @@
       startCamera();
     };
 
+    zoomSlider.addEventListener('input', () => {
+      const scale = zoomSlider.value;
+      video.style.transform = `scale(${scale})`;
+      zoomValue.textContent = `${parseFloat(scale).toFixed(1)}x`;
+    });
+
     templateSelector.addEventListener('change', e => {
       overlay.src = e.target.value;
     });
 
-    // 📂画像選択
-    document.getElementById('bgFile').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        bgImage.src = reader.result;
-        video.style.display = 'none';
-        bgImage.style.display = 'block';
-        resetBgTransform();
-      };
-      reader.readAsDataURL(file);
-    });
-
-    function resetBgTransform() {
-      bgPosX = 0; bgPosY = 0; bgScale = 1; bgRot = 0;
-      updateBgTransform();
-    }
-
-    function updateBgTransform() {
-      bgImage.style.transform =
-        `translate(${bgPosX}px, ${bgPosY}px) scale(${bgScale}) rotate(${bgRot}deg)`;
-    }
-
-    // 📱タッチ操作
-    bgImage.addEventListener('touchstart', e => {
-      if (e.touches.length === 1) {
-        startX = e.touches[0].clientX - bgPosX;
-        startY = e.touches[0].clientY - bgPosY;
-      }
-      if (e.touches.length === 2) {
-        const dx = e.touches[1].clientX - e.touches[0].clientX;
-        const dy = e.touches[1].clientY - e.touches[0].clientY;
-        startDist = Math.hypot(dx, dy);
-        startAngle = Math.atan2(dy, dx);
-        startScale = bgScale;
-        startRot = bgRot;
-      }
-    }, {passive:false});
-
-    bgImage.addEventListener('touchmove', e => {
-      if (e.touches.length === 1) {
-        bgPosX = e.touches[0].clientX - startX;
-        bgPosY = e.touches[0].clientY - startY;
-      }
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        const dx = e.touches[1].clientX - e.touches[0].clientX;
-        const dy = e.touches[1].clientY - e.touches[0].clientY;
-        const dist = Math.hypot(dx, dy);
-        const angle = Math.atan2(dy, dx);
-        bgScale = startScale * (dist / startDist);
-        bgRot = startRot + (angle - startAngle) * 180 / Math.PI;
-      }
-      updateBgTransform();
-    }, {passive:false});
-
-    // 🖱PCマウス操作
-    let dragging = false;
-    bgImage.addEventListener('mousedown', e => {
-      dragging = true;
-      startX = e.clientX - bgPosX;
-      startY = e.clientY - bgPosY;
-    });
-    window.addEventListener('mousemove', e => {
-      if (dragging) {
-        bgPosX = e.clientX - startX;
-        bgPosY = e.clientY - startY;
-        updateBgTransform();
-      }
-    });
-    window.addEventListener('mouseup', () => dragging = false);
-    window.addEventListener('wheel', e => {
-      if (e.shiftKey) { bgScale *= (e.deltaY < 0 ? 1.05 : 0.95); }
-      if (e.altKey) { bgRot += (e.deltaY < 0 ? 2 : -2); }
-      updateBgTransform();
-    });
-
-    // 📸 シャッター
     document.getElementById('captureBtn').addEventListener('click', () => {
       const w = 3508, h = 2480;
-      canvas.width = w; canvas.height = h;
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0,0,w,h);
-      ctx.fillStyle = 'rgba(0,0,0,0)';
-      ctx.fillRect(0,0,w,h);
+
+      const vw = video.videoWidth || video.offsetWidth;
+      const vh = video.videoHeight || video.offsetHeight;
+      const aspectVideo = vw / vh;
+      const aspectCanvas = w / h;
+
+      const zoom = parseFloat(zoomSlider.value);
+      let sw = vw / zoom;
+      let sh = vh / zoom;
+      let sx = (vw - sw) / 2;
+      let sy = (vh - sh) / 2;
+
+      if (aspectVideo > aspectCanvas) {
+        sw = sh * aspectCanvas;
+        sx = (vw - sw) / 2;
+      } else {
+        sh = sw / aspectCanvas;
+        sy = (vh - sh) / 2;
+      }
+
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+
       const highres = new Image();
       highres.onload = () => {
         ctx.drawImage(highres, 0, 0, w, h);
@@ -264,27 +322,253 @@
       highres.src = templateSelector.selectedOptions[0].dataset.highres;
     });
 
-    // デコレーション（簡易版）
+    function makeDraggableResizable(el) {
+      const resizer = document.createElement('div');
+      resizer.className = 'resizer';
+      el.appendChild(resizer);
+
+      const rotator = document.createElement('div');
+      rotator.className = 'rotator';
+      el.appendChild(rotator);
+
+      const del = document.createElement('div');
+      del.className = 'deleter';
+      del.textContent = '✖';
+      el.appendChild(del);
+      del.onclick = () => el.remove();
+
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        selectItem(el);
+      });
+
+      let offsetX, offsetY, isDragging = false;
+      el.addEventListener('mousedown', e => {
+        if ([resizer, rotator, del].includes(e.target)) return;
+        isDragging = true;
+        offsetX = e.offsetX; offsetY = e.offsetY;
+        function onMove(ev) {
+          el.style.left = (ev.pageX - designLayer.offsetLeft - offsetX) + 'px';
+          el.style.top = (ev.pageY - designLayer.offsetTop - offsetY) + 'px';
+        }
+
+        selectItem(el);
+        
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', () => {
+          isDragging = false;
+          document.removeEventListener('mousemove', onMove);
+        }, { once: true });
+      });
+
+      // 📱 スマホ用（touch）
+      el.addEventListener('touchstart', e => {
+        if ([resizer, rotator, del].includes(e.target)) return;
+        e.preventDefault();
+        selectItem(el); // ✅ ここ追加！
+
+
+        const touch = e.touches[0];
+        const rect = el.getBoundingClientRect();
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
+
+        function onTouchMove(ev) {
+          const moveTouch = ev.touches[0];
+          el.style.left = (moveTouch.clientX - designLayer.offsetLeft - offsetX) + 'px';
+          el.style.top = (moveTouch.clientY - designLayer.offsetTop - offsetY) + 'px';
+        }
+
+        function onTouchEnd() {
+          document.removeEventListener('touchmove', onTouchMove);
+          document.removeEventListener('touchend', onTouchEnd);
+        }
+
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+      }, { passive: false });
+
+
+
+      resizer.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
+  
+        function onResizeMove(ev) {
+          const dx = ev.clientX - startX;
+          if (el.tagName === 'SPAN') el.style.fontSize = (startSize + dx * 0.5) + 'px';
+            else el.style.transform = `scale(${1 + dx / 100})`;
+          if (el.tagName === 'SPAN') {
+            el.style.fontSize = (startSize + dx * 0.5) + 'px';
+          } else {
+            el.style.transform = `scale(${1 + dx / 100})`;
+          }
+        }
+
+        document.addEventListener('mousemove', onResizeMove);
+        document.addEventListener('mouseup', () => {
+          document.removeEventListener('mousemove', onResizeMove);
+        }, { once: true });
+      });
+
+      // 📱 スマホ用（タッチ対応）
+      resizer.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        e.preventDefault(); // スクロール防止
+        const startX = e.touches[0].clientX;
+        const startSize = parseFloat(window.getComputedStyle(el).fontSize || el.width);
+
+        function onResizeMove(ev) {
+          const moveX = ev.touches[0].clientX;
+          const dx = moveX - startX;
+          if (el.tagName === 'SPAN') {
+            el.style.fontSize = (startSize + dx * 0.5) + 'px';
+          } else {
+            el.style.transform = `scale(${1 + dx / 100})`;
+          }
+        }
+
+      function onResizeEnd() {
+          document.removeEventListener('touchmove', onResizeMove);
+          document.removeEventListener('touchend', onResizeEnd);
+        }
+
+        document.addEventListener('touchmove', onResizeMove, { passive: false });
+        document.addEventListener('touchend', onResizeEnd);
+      }, { passive: false });
+
+
+      rotator.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        function onRotateMove(ev) {
+          const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
+          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        }
+        document.addEventListener('mousemove', onRotateMove);
+        document.addEventListener('mouseup', () => {
+          document.removeEventListener('mousemove', onRotateMove);
+        }, { once: true });
+      });
+
+
+      rotator.addEventListener('touchstart', e => {
+        e.preventDefault(); // スクロール防止
+        e.stopPropagation();
+
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        function onTouchMove(ev) {
+          const touch = ev.touches[0];
+          const angle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX);
+          el.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        }
+
+        function onTouchEnd() {
+          document.removeEventListener('touchmove', onTouchMove);
+          document.removeEventListener('touchend', onTouchEnd);
+        }
+
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+      }, { passive: false });
+    }
+
+
+    function selectItem(el) {
+      if (selectedItem) selectedItem.classList.remove('selected');
+      selectedItem = el;
+      selectedItem.classList.add('selected');
+
+      // ✅ すべてのアイテムの zIndex をリセット
+      Array.from(designLayer.children).forEach(child => {
+        child.style.zIndex = 5;
+      });
+
+      // ✅ 選択された要素だけ zIndex を最前面に
+      selectedItem.style.zIndex = 20;
+
+      // ✅ カラーとフォントピッカーに反映
+      if (el.tagName === 'SPAN') {
+        document.getElementById('colorPicker').value = rgbToHex(window.getComputedStyle(el).color);
+        document.getElementById('fontPicker').value = window.getComputedStyle(el).fontFamily.split(',')[0].replace(/['"]/g, '');
+      }
+    }
+
+    // ⬇ ここから貼り付けてOKです！
+    function getRotationAndScale(transformStr) {
+      const matrix = transformStr.match(/matrix\(([^)]+)\)/);
+      if (!matrix) return { rotation: 0, scale: 1 };
+
+      const values = matrix[1].split(',').map(parseFloat);
+      const [a, b, c, d] = values;
+      const rotation = Math.atan2(b, a); // ラジアン
+      const scale = Math.sqrt(a * a + b * b);
+      return { rotation, scale };
+    }
+
+
+
+
+
+    function rgbToHex(rgb) {
+      const res = rgb.match(/\d+/g);
+      return "#" + res.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+    }
+
+    document.getElementById('colorPicker').addEventListener('input', e => {
+      const color = e.target.value;
+      if (selectedItem && selectedItem.tagName === 'SPAN') {
+        selectedItem.style.color = color;
+        selectedItem.setAttribute('data-color', color); // 保存のため
+      }
+    });
+
+    document.getElementById('fontPicker').addEventListener('input', e => {
+      const font = e.target.value;
+      const preview = document.getElementById('fontPreview');
+      preview.style.fontFamily = font;
+
+      if (selectedItem && selectedItem.tagName === 'SPAN') {
+        selectedItem.style.fontFamily = font;
+        selectedItem.setAttribute('data-font', font); // 保存のため
+      }
+    });
+
     function addTextToOverlay() {
       const text = document.getElementById('customText').value;
       if (!text.trim()) return;
+      const color = document.getElementById('colorPicker').value;
+      const font = document.getElementById('fontPicker').value;
       const span = document.createElement('span');
       span.textContent = text;
+      span.setAttribute("data-text", text); // ← ここ追加！
       span.style.left = '50%';
       span.style.top = '50%';
+      span.style.transform = 'translate(-50%, -50%)';
       span.style.fontSize = '60px';
       span.style.fontWeight = 'bold';
-      span.style.transform = 'translate(-50%, -50%)';
+      span.style.color = color;
+      span.style.fontFamily = font;
+      makeDraggableResizable(span);
       designLayer.appendChild(span);
+      selectItem(span);
     }
 
     function addStamp(emoji) {
       const span = document.createElement('span');
       span.textContent = emoji;
+      span.setAttribute("data-text", emoji); // ← これを追加！
       span.style.left = '50%';
       span.style.top = '50%';
       span.style.fontSize = '80px';
       span.style.transform = 'translate(-50%, -50%)';
+      makeDraggableResizable(span);
       designLayer.appendChild(span);
     }
 
@@ -296,66 +580,112 @@
         img.style.top = '50%';
         img.style.maxWidth = '30%';
         img.style.transform = 'translate(-50%, -50%)';
+        makeDraggableResizable(img);
         designLayer.appendChild(img);
       });
     });
 
-    // 🎨 完成ボタン → 合成
     document.getElementById('finishBtn').addEventListener('click', () => {
       const finalCanvas = document.createElement('canvas');
       finalCanvas.width = 3508;
       finalCanvas.height = 2480;
       const ctx = finalCanvas.getContext('2d');
+      const img = document.getElementById('previewImage');
+      ctx.drawImage(img, 0, 0, finalCanvas.width, finalCanvas.height);
 
-      ctx.clearRect(0,0,finalCanvas.width,finalCanvas.height);
+      const items = Array.from(designLayer.children).filter(el =>
+        el.tagName === 'SPAN' || el.tagName === 'IMG'
+      );
 
-      // 背景画像を描画（transform適用）
-      if (bgImage.style.display !== 'none' && bgImage.src) {
-        const img = bgImage;
-        const centerX = finalCanvas.width/2;
-        const centerY = finalCanvas.height/2;
-        ctx.save();
-        ctx.translate(centerX + bgPosX*4, centerY + bgPosY*4); // 4倍: スマホ→A4スケール
-        ctx.rotate(bgRot * Math.PI/180);
-        ctx.scale(bgScale, bgScale);
-        ctx.drawImage(img, -centerX, -centerY, finalCanvas.width, finalCanvas.height);
-        ctx.restore();
-      }
-
-      // うちわテンプレ
-      const highres = new Image();
-      highres.onload = () => {
-        ctx.drawImage(highres, 0, 0, finalCanvas.width, finalCanvas.height);
-
-        // デコレーション
-        const items = Array.from(designLayer.children);
-        items.forEach(item => {
-          const rect = item.getBoundingClientRect();
-          const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
-          const scaleX = finalCanvas.width / previewRect.width;
-          const scaleY = finalCanvas.height / previewRect.height;
-          const x = (rect.left - previewRect.left + rect.width/2) * scaleX;
-          const y = (rect.top - previewRect.top + rect.height/2) * scaleY;
-          ctx.save();
-          ctx.translate(x, y);
-          if (item.tagName === 'SPAN') {
-            ctx.font = `bold ${parseFloat(window.getComputedStyle(item).fontSize)*scaleX}px sans-serif`;
-            ctx.fillStyle = "#ff69b4";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(item.textContent, 0, 0);
-          } else if (item.tagName === 'IMG') {
-            ctx.drawImage(item, -item.width/2 * scaleX, -item.height/2 * scaleY,
-                          item.width * scaleX, item.height * scaleY);
-          }
-          ctx.restore();
+      // ✖削除ボタンなどを一時非表示に
+      items.forEach(el => {
+        [...el.querySelectorAll('.resizer, .rotator, .deleter')].forEach(child => {
+          child.style.display = 'none';
         });
+      });
 
-        document.getElementById('finalImage').src = finalCanvas.toDataURL('image/png');
-        document.getElementById('finalWrapper').style.display = 'block';
-      };
-      highres.src = templateSelector.selectedOptions[0].dataset.highres;
+      // canvas描画処理ここに入る（あなたの元の描画コード）
+
+      // 描画が終わったら元に戻す
+      items.forEach(el => {
+        [...el.querySelectorAll('.resizer, .rotator, .deleter')].forEach(child => {
+          child.style.display = '';
+        });
+      });
+
+      // canvas初期化（任意）
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+
+      ctx.drawImage(document.getElementById('previewImage'), 0, 0, finalCanvas.width, finalCanvas.height);
+
+      const previewRect = document.getElementById('previewWrapper').getBoundingClientRect();
+      items.forEach(item => {
+        const rect = item.getBoundingClientRect();
+        const scaleX = finalCanvas.width / previewRect.width;
+        const scaleY = finalCanvas.height / previewRect.height;
+        const x = (rect.left - previewRect.left + rect.width / 2) * scaleX;
+        const y = (rect.top - previewRect.top + rect.height / 2) * scaleY;
+        ctx.save();
+        ctx.translate(x, y);
+        const style = window.getComputedStyle(item);
+        const transformStr = style.transform;
+        const { rotation, scale } = getRotationAndScale(transformStr);
+        ctx.rotate(rotation);
+
+
+        if (item.tagName === 'SPAN') {
+          const originalText = item.getAttribute('data-text') || item.textContent;
+          ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scale * scaleX}px ${style.fontFamily}`;
+          ctx.fillStyle = style.color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(originalText, 0, 0); // ← 修正された描画！
+        } else if (item.tagName === 'IMG') {
+          ctx.drawImage(item, -item.width / 2 * scaleX * scale, -item.height / 2 * scaleY * scale,
+                        item.width * scaleX * scale, item.height * scaleY * scale);
+        }
+        ctx.restore();
+      });
+
+      document.getElementById('finalImage').src = finalCanvas.toDataURL('image/png');
+      document.getElementById('finalWrapper').style.display = 'block';
+      document.getElementById('formButton').style.display = 'inline-block';
     });
+
+
+    // ページ読み込み時にフォントプレビューを初期化＋古いテキストにもイベント追加
+    window.addEventListener('DOMContentLoaded', () => {
+      const font = document.getElementById('fontPicker').value;
+      document.getElementById('fontPreview').style.fontFamily = font;
+
+      // ⬇ ここが追加点！
+      const oldTexts = document.querySelectorAll('#designLayer span');
+      oldTexts.forEach(span => {
+        makeDraggableResizable(span);
+      });
+    });
+
+    // 👇 designLayerの空白をタップしたら選択を解除
+    designLayer.addEventListener('click', (e) => {
+      if (e.target === designLayer) {
+        if (selectedItem) {
+          selectedItem.classList.remove('selected');
+          selectedItem = null;
+        }
+      }
+    });
+
+    // 📱スマホでも反応させる（touch）
+    designLayer.addEventListener('touchstart', (e) => {
+      if (e.target === designLayer) {
+        if (selectedItem) {
+          selectedItem.classList.remove('selected');
+          selectedItem = null;
+        }
+      }
+    }, { passive: true });
   </script>
 </body>
 </html>
