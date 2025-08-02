@@ -477,6 +477,22 @@
       }
     }
 
+    // ⬇ ここから貼り付けてOKです！
+    function getRotationAndScale(transformStr) {
+      const matrix = transformStr.match(/matrix\(([^)]+)\)/);
+      if (!matrix) return { rotation: 0, scale: 1 };
+
+      const values = matrix[1].split(',').map(parseFloat);
+      const [a, b, c, d] = values;
+      const rotation = Math.atan2(b, a); // ラジアン
+      const scale = Math.sqrt(a * a + b * b);
+      return { rotation, scale };
+    }
+
+
+
+
+
     function rgbToHex(rgb) {
       const res = rgb.match(/\d+/g);
       return "#" + res.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
@@ -583,19 +599,21 @@
         ctx.save();
         ctx.translate(x, y);
         const style = window.getComputedStyle(item);
-        const angleMatch = style.transform.match(/rotate\(([-0-9.]+)deg\)/);
-        const angle = angleMatch ? parseFloat(angleMatch[1]) : 0;
-        ctx.rotate(angle * Math.PI / 180);
+        const transformStr = style.transform;
+        const { rotation, scale } = getRotationAndScale(transformStr);
+        ctx.rotate(rotation);
+
+
         if (item.tagName === 'SPAN') {
           const originalText = item.getAttribute('data-text') || item.textContent;
-          ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scaleX}px ${style.fontFamily}`;
+          ctx.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scale * scaleX}px ${style.fontFamily}`;
           ctx.fillStyle = style.color;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(originalText, 0, 0); // ← 修正された描画！
         } else if (item.tagName === 'IMG') {
-          ctx.drawImage(item, -item.width/2 * scaleX, -item.height/2 * scaleY,
-                        item.width * scaleX, item.height * scaleY);
+          ctx.drawImage(item, -item.width / 2 * scaleX * scale, -item.height / 2 * scaleY * scale,
+                        item.width * scaleX * scale, item.height * scaleY * scale);
         }
         ctx.restore();
       });
