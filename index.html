@@ -471,6 +471,16 @@
       if (selectedItem) selectedItem.classList.remove('selected');
       selectedItem = el;
       selectedItem.classList.add('selected');
+
+      // ✅ すべてのアイテムの zIndex をリセット
+      Array.from(designLayer.children).forEach(child => {
+        child.style.zIndex = 5;
+      });
+
+      // ✅ 選択された要素だけ zIndex を最前面に
+      selectedItem.style.zIndex = 20;
+
+      // ✅ カラーとフォントピッカーに反映
       if (el.tagName === 'SPAN') {
         document.getElementById('colorPicker').value = rgbToHex(window.getComputedStyle(el).color);
         document.getElementById('fontPicker').value = window.getComputedStyle(el).fontFamily.split(',')[0].replace(/['"]/g, '');
