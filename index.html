@@ -509,14 +509,22 @@
     }
 
     document.getElementById('colorPicker').addEventListener('input', e => {
-      if (selectedItem) selectedItem.style.color = e.target.value;
+      const color = e.target.value;
+      if (selectedItem && selectedItem.tagName === 'SPAN') {
+        selectedItem.style.color = color;
+        selectedItem.setAttribute('data-color', color); // 保存のため
+      }
     });
 
     document.getElementById('fontPicker').addEventListener('input', e => {
       const font = e.target.value;
       const preview = document.getElementById('fontPreview');
       preview.style.fontFamily = font;
-      if (selectedItem) selectedItem.style.fontFamily = font;
+
+      if (selectedItem && selectedItem.tagName === 'SPAN') {
+        selectedItem.style.fontFamily = font;
+        selectedItem.setAttribute('data-font', font); // 保存のため
+      }
     });
 
     function addTextToOverlay() {
