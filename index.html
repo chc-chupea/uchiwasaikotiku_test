@@ -659,7 +659,26 @@
         makeDraggableResizable(span);
       });
     });
-  </script>
 
+    // 👇 designLayerの空白をタップしたら選択を解除
+    designLayer.addEventListener('click', (e) => {
+      if (e.target === designLayer) {
+        if (selectedItem) {
+          selectedItem.classList.remove('selected');
+          selectedItem = null;
+        }
+      }
+    });
+
+    // 📱スマホでも反応させる（touch）
+    designLayer.addEventListener('touchstart', (e) => {
+      if (e.target === designLayer) {
+        if (selectedItem) {
+          selectedItem.classList.remove('selected');
+          selectedItem = null;
+        }
+      }
+    }, { passive: true });
+  </script>
 </body>
 </html>
