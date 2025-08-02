@@ -344,6 +344,9 @@
           el.style.left = (ev.pageX - designLayer.offsetLeft - offsetX) + 'px';
           el.style.top = (ev.pageY - designLayer.offsetTop - offsetY) + 'px';
         }
+
+        selectItem(el);
+        
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', () => {
           isDragging = false;
@@ -355,6 +358,9 @@
       el.addEventListener('touchstart', e => {
         if ([resizer, rotator, del].includes(e.target)) return;
         e.preventDefault();
+        selectItem(el); // ✅ ここ追加！
+
+
         const touch = e.touches[0];
         const rect = el.getBoundingClientRect();
         offsetX = touch.clientX - rect.left;
