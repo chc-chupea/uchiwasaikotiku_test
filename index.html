@@ -634,10 +634,16 @@
     });
 
 
-    // ページ読み込み時にフォントプレビューを初期化
+    // ページ読み込み時にフォントプレビューを初期化＋古いテキストにもイベント追加
     window.addEventListener('DOMContentLoaded', () => {
       const font = document.getElementById('fontPicker').value;
       document.getElementById('fontPreview').style.fontFamily = font;
+
+      // ⬇ ここが追加点！
+      const oldTexts = document.querySelectorAll('#designLayer span');
+      oldTexts.forEach(span => {
+        makeDraggableResizable(span);
+      });
     });
   </script>
 
