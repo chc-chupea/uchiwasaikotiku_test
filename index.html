@@ -163,17 +163,6 @@
       width: 60px;
       height: 40px;
     }
-    /* 👇ここに追加 */
-    #backColorPicker {
-      border-radius: 20px;
-      border: 1px solid #ffb6c1;
-      padding: 10px;
-      background: #fff0f5;
-      font-family: 'Mochiy Pop One', sans-serif;
-      width: 60px;
-      height: 40px;
-    }
-
 
     #zoomSection {
       margin-top: 10px;
@@ -206,23 +195,6 @@
       color: #333;
     }
 
-    /* 👇ここに追加！ */
-    #toggleSideBtn {
-      margin-top: 10px;
-      padding: 10px 20px;
-      background: linear-gradient(135deg, #ba68c8, #ce93d8);
-      color: white;
-      font-family: 'Mochiy Pop One', sans-serif;
-      border: none;
-      border-radius: 40px;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-
-    #toggleSideBtn:hover {
-      transform: scale(1.05);
-    }
   </style>
 </head>
 <body>
@@ -252,25 +224,10 @@
   </div>
   <button id="captureBtn">📸 シャッター</button>
 
-<!-- 👇ここに追加 -->
-<button id="toggleSideBtn">🔄 裏面に切り替え</button>
-
-  <div id="backColorPickerWrapper" style="margin-top:10px;">
-    <label for="backColorPicker">🎨 裏面うちわの色：</label>
-    <input type="color" id="backColorPicker" value="#cceeff" />
-  </div>
-
   <div id="previewWrapper" style="display:none; position: relative;">
   <img id="previewImage" />
   <div id="designLayer" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
 </div>
-
-<!-- 👇ここに追加 -->
-<div id="previewWrapperBack" style="display:none; position: relative;">
-  <img id="previewImageBack" />
-  <div id="designLayerBack" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
-</div>
-
 
   <div id="editTools" style="display:none; margin-top:10px;">
     <div>
@@ -337,48 +294,7 @@
     let currentStream = null;
     let selectedItem = null;
 
-    let designLayer = document.getElementById('designLayer');
-    // 👇 この下に追加！
-    let currentSide = 'front';
-
-    document.getElementById('toggleSideBtn').addEventListener('click', () => {
-      currentSide = (currentSide === 'front') ? 'back' : 'front';
-      updateSideView();
-    });
-
-    function updateSideView() {
-      const front = {
-        previewWrapper: document.getElementById('previewWrapper'),
-        designLayer: document.getElementById('designLayer'),
-        previewImage: document.getElementById('previewImage')
-      };
-      const back = {
-        previewWrapper: document.getElementById('previewWrapperBack'),
-        designLayer: document.getElementById('designLayerBack'),
-        previewImage: document.getElementById('previewImageBack')
-      };
-
-      if (currentSide === 'front') {
-        front.previewWrapper.style.display = 'block';
-        back.previewWrapper.style.display = 'none';
-        designLayer = front.designLayer;
-      } else {
-        front.previewWrapper.style.display = 'none';
-        back.previewWrapper.style.display = 'block';
-        designLayer = back.designLayer;
-        
-        // 👇ここに追加！
-        const selectedColor = document.getElementById('backColorPicker').value;
-        fillUchiwaInside("うちわ枠.png", selectedColor, (resultImage) => {
-          back.previewImage.src = resultImage;
-        });
-      }
-      reapplyInteractivity();
-    }
-
-
-
-
+    const designLayer = document.getElementById('designLayer');
 
     async function startCamera() {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
@@ -873,55 +789,7 @@
         }
       }
     }, { passive: true });
-
-    function fillUchiwaInside(maskSrc, fillColor, callback) {
-      const img = new Image();
-      img.crossOrigin = "anonymous"; // CORS回避用（ローカルなら不要）
-      img.src = maskSrc;
-
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-
-        // ① 画像を描画
-        ctx.drawImage(img, 0, 0);
-
-        // ② ピクセルを取得
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-
-        // ③ 黒色部分（うちわ）を判定し、塗る
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i+1];
-          const b = data[i+2];
-
-          // 黒部分（閾値つき）を判定
-          if (r < 30 && g < 30 && b < 30) {
-            // 好きな色（ベイビーブルー例）
-            data[i] = 204;  // R
-            data[i+1] = 238; // G
-            data[i+2] = 255; // B
-            data[i+3] = 255; // A
-          }
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-
-        callback(canvas.toDataURL('image/png'));
-      };
-    }
-
-    document.getElementById('backColorPicker').addEventListener('input', () => {
-      if (currentSide === 'back') {
-        const color = document.getElementById('backColorPicker').value;
-        fillUchiwaInside("うちわ枠.png", color, (resultImage) => {
-          document.getElementById('previewImageBack').src = resultImage;
-        });
-      }
-    });
   </script>
 </body>
+
 </html>
