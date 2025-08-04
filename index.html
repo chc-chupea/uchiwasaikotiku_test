@@ -224,8 +224,19 @@
       <button onclick="document.getElementById('stampFile').click()">📷 画像スタンプを追加</button>
       <input type="file" id="stampFile" accept="image/*" style="display:none;" multiple>
     </div>
+
+    <!-- ✅ここに追加！ -->
+    <div style="margin-top: 10px;"> 
+      <button onclick="undo()">↶ もどる</button>
+      <button onclick="redo()">↪ やりなおし</button>
+    </div>
+
     <button id="finishBtn" style="margin-top:10px;">🎨 完成！</button>
   </div>
+
+
+
+
 
   <div id="finalWrapper" style="display:none; margin-top:20px;">
     <p>📱 完成画像を長押しで保存できます</p>
@@ -236,6 +247,9 @@
      target="_blank" class="form-button" id="formButton" style="display:none;">📝 注文フォームへ進む</a>
 
   <script>
+    let undoStack = [];
+    let redoStack = [];
+    
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const overlay = document.getElementById('overlay');
@@ -335,7 +349,11 @@
       del.className = 'deleter';
       del.textContent = '✖';
       el.appendChild(del);
-      del.onclick = () => el.remove();
+      
+      del.onclick = () => {
+      el.remove();
+      saveState();
+    };
 
       el.addEventListener('click', e => {
         e.stopPropagation();
@@ -358,6 +376,7 @@
         document.addEventListener('mouseup', () => {
           isDragging = false;
           document.removeEventListener('mousemove', onMove);
+          saveState(); // ←ここ！
         }, { once: true });
       });
 
@@ -382,6 +401,7 @@
         function onTouchEnd() {
           document.removeEventListener('touchmove', onTouchMove);
           document.removeEventListener('touchend', onTouchEnd);
+          saveState(); // ←ここ！
         }
 
         document.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -409,6 +429,7 @@
         document.addEventListener('mousemove', onResizeMove);
         document.addEventListener('mouseup', () => {
           document.removeEventListener('mousemove', onResizeMove);
+        saveState(); // ←ここ！
         }, { once: true });
       });
 
@@ -432,10 +453,12 @@
       function onResizeEnd() {
           document.removeEventListener('touchmove', onResizeMove);
           document.removeEventListener('touchend', onResizeEnd);
+          saveState(); // ←ここ！
         }
 
         document.addEventListener('touchmove', onResizeMove, { passive: false });
         document.addEventListener('touchend', onResizeEnd);
+        saveState(); // ←ここ！
       }, { passive: false });
 
 
@@ -450,7 +473,8 @@
         }
         document.addEventListener('mousemove', onRotateMove);
         document.addEventListener('mouseup', () => {
-          document.removeEventListener('mousemove', onRotateMove);
+        document.removeEventListener('mousemove', onRotateMove);
+        saveState(); // ←ここ！
         }, { once: true });
       });
 
@@ -472,10 +496,12 @@
         function onTouchEnd() {
           document.removeEventListener('touchmove', onTouchMove);
           document.removeEventListener('touchend', onTouchEnd);
+          saveState(); // ←ここ！
         }
 
         document.addEventListener('touchmove', onTouchMove, { passive: false });
         document.addEventListener('touchend', onTouchEnd);
+        saveState(); // ←ここ！
       }, { passive: false });
     }
 
@@ -521,6 +547,49 @@
       return "#" + res.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
     }
 
+    // ←★このすぐ下に追加！
+    function saveState() {
+      const state = designLayer.innerHTML;
+      undoStack.push(state);
+      redoStack = [];
+      updateUndoRedoButtons(); // ←追加！
+    }
+
+    // ✅ undoとredoはここに追加！
+    function undo() {
+      if (undoStack.length === 0) return;
+      const current = designLayer.innerHTML;
+      redoStack.push(current);
+      const prev = undoStack.pop();
+      designLayer.innerHTML = prev;
+      reapplyInteractivity();
+      updateUndoRedoButtons(); // ←呼び出し
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const current = designLayer.innerHTML;
+      undoStack.push(current);
+      const next = redoStack.pop();
+      designLayer.innerHTML = next;
+      reapplyInteractivity();
+      updateUndoRedoButtons(); // ←呼び出し
+    }
+
+    // ✅ このあとに定義を追加！
+    function updateUndoRedoButtons() {
+      document.querySelector('button[onclick="undo()"]').disabled = (undoStack.length === 0);
+      document.querySelector('button[onclick="redo()"]').disabled = (redoStack.length === 0);
+    }
+
+    // ✅ この位置がベスト！
+    function reapplyInteractivity() {
+      Array.from(designLayer.children).forEach(el => {
+        makeDraggableResizable(el);
+      });
+    }
+
+
     document.getElementById('colorPicker').addEventListener('input', e => {
       const color = e.target.value;
       if (selectedItem && selectedItem.tagName === 'SPAN') {
@@ -558,6 +627,7 @@
       makeDraggableResizable(span);
       designLayer.appendChild(span);
       selectItem(span);
+      saveState(); // ←ここを追加！
     }
 
     function addStamp(emoji) {
@@ -570,6 +640,7 @@
       span.style.transform = 'translate(-50%, -50%)';
       makeDraggableResizable(span);
       designLayer.appendChild(span);
+      saveState(); // ←ここ追加！
     }
 
     document.getElementById('stampFile').addEventListener('change', e => {
@@ -582,6 +653,7 @@
         img.style.transform = 'translate(-50%, -50%)';
         makeDraggableResizable(img);
         designLayer.appendChild(img);
+        saveState(); // ←ここ追加！
       });
     });
 
@@ -660,11 +732,9 @@
       const font = document.getElementById('fontPicker').value;
       document.getElementById('fontPreview').style.fontFamily = font;
 
-      // ⬇ ここが追加点！
-      const oldTexts = document.querySelectorAll('#designLayer span');
-      oldTexts.forEach(span => {
-        makeDraggableResizable(span);
-      });
+      // ✅ これを追加！
+      reapplyInteractivity();
+      updateUndoRedoButtons(); // ←これも入れて初期化！
     });
 
     // 👇 designLayerの空白をタップしたら選択を解除
